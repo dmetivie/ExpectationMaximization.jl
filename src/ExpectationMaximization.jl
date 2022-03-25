@@ -1,5 +1,14 @@
 module ExpectationMaximization
 
-# Write your package code here.
+using ArgCheck
+using Distributions
+using StatsFuns: logsumexp
 
+# Extended functions
+import Distributions: fit_mle
+
+export fit_mle
+
+include("fit_em.jl")
+include("fit_mle_product_distributions.jl")
 end
