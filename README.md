@@ -3,6 +3,8 @@
 This package provides a simple implementation of the Expectation Maximization algorithm used to fit mixture models.
 Due to [Julia](https://julialang.org/) amazing [multiple dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) systems and the [Distributions](https://juliastats.org/Distributions.jl/stable/) package, the code is very generic i.e., mixture of all common distributions should be supported.
 
+I plan to add different methods for E-step and M-steps like stochastic EM and others.
+
 ## Example
 
 ```julia
