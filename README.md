@@ -47,3 +47,4 @@ isapprox(θ₁, p[1]...; rtol = rtol)
 isapprox(α, p[2][1]; rtol = rtol)
 isapprox(θ₂, p[2][2]; rtol = rtol)
 ```
+![EM_mixture_example.svg](img/EM_mixture_example.svg)

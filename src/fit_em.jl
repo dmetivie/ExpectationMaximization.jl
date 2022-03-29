@@ -1,5 +1,5 @@
 """
-fit_mle(mix::MixtureModel, y; display = :none, maxiter = 100, tol = 1e-3, robust = false)
+fit_mle(mix::MixtureModel, y; display = :none, maxiter = 1000, tol = 1e-3, robust = false)
 
 fit_em use Expectation Maximization (EM) algorithm to maximize the Loglikelihood (fit) the mixture to an i.i.d sample `y`.
 The `mix` agrument is a mixture that is used to initilize the EM algorithm.
