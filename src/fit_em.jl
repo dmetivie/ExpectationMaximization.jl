@@ -26,7 +26,7 @@ function fit_mle(mix::MixtureModel, y::AbstractVector; display = :none, maxiter 
     # E-step
     # evaluate likelihood for each type k
     for k = 1:K
-        LL[:, k] = log(α[k]) .+ logpdf(dists[k], y)
+        LL[:, k] = log(α[k]) .+ logpdf.(dists[k], y)
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
@@ -47,7 +47,7 @@ function fit_mle(mix::MixtureModel, y::AbstractVector; display = :none, maxiter 
         # E-step
         # evaluate likelihood for each type k
         for k = 1:K
-            LL[:, k] = log(α[k]) .+ logpdf(dists[k], y)
+            LL[:, k] = log(α[k]) .+ logpdf.(dists[k], y)
         end
         robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
         # get posterior of each category
@@ -102,7 +102,7 @@ function fit_mle(mix::MixtureModel, y::AbstractMatrix; display = :none, maxiter 
     # E-step
     # evaluate likelihood for each type k
     for k = 1:K
-        LL[:, k] = log(α[k]) .+ logpdf(dists[k], y)
+        LL[:, k] = log(α[k]) .+ logpdf.(dists[k], y)
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
@@ -123,7 +123,7 @@ function fit_mle(mix::MixtureModel, y::AbstractMatrix; display = :none, maxiter 
         # E-step
         # evaluate likelihood for each type k
         for k = 1:K
-            LL[:, k] = log(α[k]) .+ logpdf(dists[k], y)
+            LL[:, k] = log(α[k]) .+ logpdf.(dists[k], y)
         end
         robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
         # get posterior of each category

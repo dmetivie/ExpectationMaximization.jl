@@ -3,7 +3,7 @@ using Distributions
 using Test
 
 @testset "ExpectationMaximization.jl" begin
-    N = 50000
+    N = 50_000
     θ₁ = 10
     θ₂ = 5
     α = 0.2
