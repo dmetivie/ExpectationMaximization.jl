@@ -31,7 +31,7 @@ y = rand(mix_true, N)
 
 ```julia
 # Initial guess
-mix_mle = fit_mle(mix_guess, y; display = :iter, tol = 1e-3, robust = false, infos = false)
+mix_guess = MixtureModel([Exponential(1), Gamma(0.5, 1)], [0.5, 1 - 0.5])
 
 # Fit the MLE with the EM algorithm
 mix_mle = fit_mle(mix_guess, y; display = :iter, tol = 1e-3, robust = false, infos = false)
