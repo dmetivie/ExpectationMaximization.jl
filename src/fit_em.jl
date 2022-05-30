@@ -4,12 +4,14 @@ fit_mle(mix::MixtureModel, y; display = :none, maxiter = 1000, tol = 1e-3, robus
 fit_em use Expectation Maximization (EM) algorithm to maximize the Loglikelihood (fit) the mixture to an i.i.d sample `y`.
 The `mix` agrument is a mixture that is used to initilize the EM algorithm.
 """
-function fit_mle(mix::MixtureModel, y::AbstractVector; display = :none, maxiter = 1000, tol = 1e-3, robust = false, infos = false)
+#TODO redundant between y::Vector or y::Matrix -> because N = size(y,1)=length(y) or N = size(y,2) because of column convention
+function fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVector;
+    display=:none, maxiter=1000, tol=1e-3, robust=false)
 
     @argcheck display in [:none, :iter, :final]
     @argcheck maxiter >= 0
 
-    N, K = length(y), ncomponents(mix)
+    N, K = length(y), length(dists)
     history = Dict("converged" => false, "iterations" => 0, "logtots" => zeros(0))
 
     # Allocate memory for in-place updates
@@ -17,11 +19,6 @@ function fit_mle(mix::MixtureModel, y::AbstractVector; display = :none, maxiter 
     LL = zeros(N, K)
     γ = similar(LL)
     c = zeros(N)
-    # types = typeof.(components(mix))
-
-    # Initial parameters
-    α = copy(probs(mix))
-    dists = copy(components(mix))
 
     # E-step
     # evaluate likelihood for each type k
@@ -30,7 +27,7 @@ function fit_mle(mix::MixtureModel, y::AbstractVector; display = :none, maxiter 
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
-    c[:] = logsumexp(LL, dims = 2)
+    c[:] = logsumexp(LL, dims=2)
     γ[:, :] = exp.(LL .- c)
 
     # Loglikelihood
@@ -41,7 +38,7 @@ function fit_mle(mix::MixtureModel, y::AbstractVector; display = :none, maxiter 
 
         # M-step
         # with γ, maximize (update) the parameters
-        α[:] = mean(γ, dims = 1)
+        α[:] = mean(γ, dims=1)
         dists[:] = [fit_mle(dists[k], y, γ[:, k]) for k = 1:K]
 
         # E-step
@@ -51,7 +48,7 @@ function fit_mle(mix::MixtureModel, y::AbstractVector; display = :none, maxiter 
         end
         robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
         # get posterior of each category
-        c[:] = logsumexp(LL, dims = 2)
+        c[:] = logsumexp(LL, dims=2)
         γ[:, :] = exp.(LL .- c)
 
         # Loglikelihood
@@ -77,15 +74,16 @@ function fit_mle(mix::MixtureModel, y::AbstractVector; display = :none, maxiter 
         end
     end
 
-    return infos ? (MixtureModel(dists, α), history) : MixtureModel(dists, α)
+    return history
 end
 
-function fit_mle(mix::MixtureModel, y::AbstractMatrix; display = :none, maxiter = 1000, tol = 1e-3, robust = false, infos = false)
+function fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractMatrix;
+    display=:none, maxiter=1000, tol=1e-3, robust=false)
 
     @argcheck display in [:none, :iter, :final]
     @argcheck maxiter >= 0
 
-    N, K = size(y, 2), ncomponents(mix)
+    N, K = size(y, 2), length(dists)
     history = Dict("converged" => false, "iterations" => 0, "logtots" => zeros(0))
 
     # Allocate memory for in-place updates
@@ -93,11 +91,6 @@ function fit_mle(mix::MixtureModel, y::AbstractMatrix; display = :none, maxiter 
     LL = zeros(N, K)
     γ = similar(LL)
     c = zeros(N)
-    # types = typeof.(components(mix))
-
-    # Initial parameters
-    α = copy(probs(mix))
-    dists = copy(components(mix))
 
     # E-step
     # evaluate likelihood for each type k
@@ -106,7 +99,7 @@ function fit_mle(mix::MixtureModel, y::AbstractMatrix; display = :none, maxiter 
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
-    c[:] = logsumexp(LL, dims = 2)
+    c[:] = logsumexp(LL, dims=2)
     γ[:, :] = exp.(LL .- c)
 
     # Loglikelihood
@@ -117,7 +110,7 @@ function fit_mle(mix::MixtureModel, y::AbstractMatrix; display = :none, maxiter 
 
         # M-step
         # with γ in hand, maximize (update) the parameters
-        α[:] = mean(γ, dims = 1)
+        α[:] = mean(γ, dims=1)
         dists[:] = [fit_mle(dists[k], y, γ[:, k]) for k = 1:K]
 
         # E-step
@@ -127,7 +120,7 @@ function fit_mle(mix::MixtureModel, y::AbstractMatrix; display = :none, maxiter 
         end
         robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
         # get posterior of each category
-        c[:] = logsumexp(LL, dims = 2)
+        c[:] = logsumexp(LL, dims=2)
         γ[:, :] = exp.(LL .- c)
 
         # Loglikelihood
@@ -152,6 +145,18 @@ function fit_mle(mix::MixtureModel, y::AbstractMatrix; display = :none, maxiter 
             println("EM has not converged after $(history["iterations"]) iterations, logtot = $logtot")
         end
     end
+
+    return history
+end
+
+function fit_mle(mix::MixtureModel, y::AbstractVecOrMat; display=:none, maxiter=1000, tol=1e-3, robust=false, infos=false)
+
+    # Initial parameters
+    α = copy(probs(mix))
+    dists = copy(components(mix))
+
+    #TODO is there a better way to avoid when infos = false allocating history?
+    history = fit_mle!(α, dists, y; display=display, maxiter=maxiter, tol=tol, robust=robust)
 
     return infos ? (MixtureModel(dists, α), history) : MixtureModel(dists, α)
 end
