@@ -2,7 +2,7 @@ module ExpectationMaximization
 
 using ArgCheck
 using Distributions
-using StatsFuns: logsumexp
+using LogExpFunctions: logsumexp
 
 # Extended functions
 import Distributions: fit_mle
