@@ -21,6 +21,12 @@ end
 
 """
 Now `fit_mle(Bernoulli(0.2), x)` is accepted in addition of `fit_mle(Bernoulli, x)` this allows compatibility with how `fit_mle(g::Product)` and `fit_mle(g::MixtureModel)` are written.
+#! Not 100% sure it will not cause any issuses or conflic!
+#! There might be another way to do with the type something like:
+#! https://discourse.julialang.org/t/ann-copulas-jl-a-fully-distributions-jl-compliant-copula-package/76544/12?u=dmetivie
+#! MyMarginals = Tuple{LogNormal,Pareto,Gamma,Normal};
+#! fitted_model = fit(SklarDist{MyCop,MyMarginals},data)
+#! and initial parameters as kwargs?
 """
 function fit_mle(g::Distribution{Univariate,Discrete}, args...)
     fit_mle(typeof(g), args...)
