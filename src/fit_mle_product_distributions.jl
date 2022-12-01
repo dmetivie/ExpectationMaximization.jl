@@ -6,14 +6,14 @@
 Simply extend the `fit_mle` function to multivariate Product distributions.
 """
 function fit_mle(g::Product, x::AbstractMatrix)
-    S = size(x, 1) # row convention
+    S = size(x, 1) # Distributions convention
     vec_g = g.v
     @argcheck S == length(vec_g)
     return product_distribution([fit_mle(typeof(vec_g[s]), y) for (s, y) in enumerate(eachrow(x))])
 end
 
 function fit_mle(g::Product, x::AbstractMatrix, γ::AbstractVector)
-    S = size(x, 1) # row convention
+    S = size(x, 1) # Distributions convention
     vec_g = g.v
     @argcheck S == length(vec_g)
     return product_distribution([fit_mle(typeof(vec_g[s]), y, γ) for (s, y) in enumerate(eachrow(x))])
@@ -28,10 +28,10 @@ Now `fit_mle(Bernoulli(0.2), x)` is accepted in addition of `fit_mle(Bernoulli, 
 #! fitted_model = fit(SklarDist{MyCop,MyMarginals},data)
 #! and initial parameters as kwargs?
 """
-function fit_mle(g::Distribution{Univariate,Discrete}, args...)
+function fit_mle(g::Distribution{Univariate,S}, args...) where {S}
     fit_mle(typeof(g), args...)
 end
 
-function fit_mle(g::Distribution{Univariate,Continuous}, args...)
+function fit_mle(g::Distribution{Multivariate,S}, args...) where {S}
     fit_mle(typeof(g), args...)
 end
