@@ -56,3 +56,34 @@ p = params(mix_mle)[1]
 @test isapprox(collect(p[2]), [θ₂, Σ₂], rtol=rtol)
 
 end
+
+# Bernoulli Mixture i.e. Mixture of Bernoulli Product (S = 10 term and K = 3 mixture components).
+@testset "Multivariate Product Bernoulli Mixture" begin
+N = 50_000
+seed = MersenneTwister(0)
+rtol = 5e-2
+
+S = 10
+K = 3
+θ = zeros(S, K)
+θ[:,1] = (1:S)/S .- 0.05 # Bernoulli parameters
+θ[:, 2] = (S:-1:1) / 2S # Bernoulli parameters
+θ[:, 3] = ones(S) + 0.1*[isodd(i) ? -1 : 1 for i in 1:S] .- 0.4# Bernoulli parameters
+β = 0.3
+
+mix_true = MixtureModel([product_distribution(Bernoulli.(θ[:,i])) for i in 1:K], [β/2, 1 - β, β/2])
+
+# Generate samples from the true distribution
+y = rand(seed, mix_true, N)
+
+# Initial Condition
+mix_guess = MixtureModel([product_distribution(Bernoulli.(2θ[:,i]/3)) for i in 1:K], [0.25, 0.55, 0.2])
+
+# Fit MLE
+mix_mle = fit_mle(mix_guess, y; display=:iter, tol=1e-3, robust=false, infos=false)
+
+p = params(mix_mle)[1]
+@test isapprox([β/2, 1 - β, β/2], probs(mix_mle); rtol=rtol)
+@test isapprox(first.(hcat(p...)), θ, rtol=rtol)
+
+end
