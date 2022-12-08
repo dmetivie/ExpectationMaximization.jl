@@ -5,6 +5,8 @@ Due to [Julia](https://julialang.org/) amazing [multiple dispatch](https://www.y
 
 I plan to add different methods for E-step and M-steps like stochastic EM and others.
 
+I should add examples with MNIST dataset and Bernoulli mixtures. Look at the tests to see examples with multivariate distributions.
+
 ## Example
 
 ```julia
