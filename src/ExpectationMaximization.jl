@@ -5,7 +5,7 @@ using Distributions
 using LogExpFunctions: logsumexp
 
 # Extended functions
-import Distributions: fit_mle
+import Distributions: fit_mle, params
 
 export fit_mle, fit_mle!
 

@@ -19,6 +19,7 @@ function fit_mle(g::Product, x::AbstractMatrix, γ::AbstractVector)
     return product_distribution([fit_mle(typeof(vec_g[s]), y, γ) for (s, y) in enumerate(eachrow(x))])
 end
 
+params(g::Product) = params.(g.v)
 """
 Now `fit_mle(Bernoulli(0.2), x)` is accepted in addition of `fit_mle(Bernoulli, x)` this allows compatibility with how `fit_mle(g::Product)` and `fit_mle(g::MixtureModel)` are written.
 #! Not 100% sure it will not cause any issuses or conflic!
