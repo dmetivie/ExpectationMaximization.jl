@@ -16,6 +16,24 @@ function fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; display=:no
     return infos ? (MixtureModel(dists, α), history) : MixtureModel(dists, α)
 end
 
+"""
+    fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; display=:none, maxiter=1000, tol=1e-3, robust=false, infos=false)
+
+Use `fit_mle` (EM) algorithm for all the different initial conditions in the mix array and select the one with the largest likelihood.
+"""
+function fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; display=:none, maxiter=1000, tol=1e-3, robust=false, infos=false)
+
+    mx_max, history_max = fit_mle(mix[1], y, weights...; display=display, maxiter=maxiter, tol=tol, robust=robust, infos=true)
+    for j in eachindex(mix)[2:end]
+        mx_new, history_new = fit_mle(mix[j], y, weights...; display=display, maxiter=maxiter, tol=tol, robust=robust, infos=true)
+        if history_max["logtots"][end] < history_new["logtots"][end]
+            mx_max = mx_new
+            history_max = copy(history_new)
+        end
+    end
+    return infos ? (mx_max, history_max) : mx_max
+end
+
 function E_step!(LL::AbstractMatrix, c::AbstractVector, γ::AbstractMatrix, dists::AbstractVector{F} where {F<:Distribution}, α::AbstractVector, y::AbstractVector; robust=false)
     # evaluate likelihood for each type k
     for k = eachindex(dists)
@@ -126,30 +144,30 @@ function fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distrib
     (display == :iter) && println("Iteration 0: logtot = $logtot")
 
     for it = 1:maxiter
-    
+
         # M-step
         # with γ in hand, maximize (update) the parameters
         α[:] = mean(γ, dims=1)
         dists[:] = [fit_mle(dists[k], y, w[:] .* γ[:, k]) for k = 1:K]
-    
+
         # E-step
         # evaluate likelihood for each type k
         E_step!(LL, c, γ, dists, α, y; robust=robust)
-    
+
         # Loglikelihood
         logtotp = sum(w[n] * c[n] for n in eachindex(c)) #dot(w, c)
         (display == :iter) && println("Iteration $it: logtot = $logtotp")
-    
+
         push!(history["logtots"], logtotp)
         history["iterations"] += 1
-    
+
         if abs(logtotp - logtot) < tol
             (display in [:iter, :final]) &&
                 println("EM converged in $it iterations, logtot = $logtotp")
             history["converged"] = true
             break
         end
-    
+
         logtot = logtotp
     end
 
