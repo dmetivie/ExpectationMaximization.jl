@@ -147,7 +147,7 @@ function fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distrib
 
         # M-step
         # with γ in hand, maximize (update) the parameters
-        α[:] = mean(γ, dims=1)
+        α[:] = mean(γ, weights(w), dims=1)
         dists[:] = [fit_mle(dists[k], y, w[:] .* γ[:, k]) for k = 1:K]
 
         # E-step
