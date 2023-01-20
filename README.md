@@ -39,7 +39,6 @@ Or, when possible, represent your “difficult” distribution as a mixture of s
 (I had [this](https://stats.stackexchange.com/questions/63647/estimating-parameters-of-students-t-distribution) in mind, but it is not directly a mixture model.)
 
 ## TODO (feel free to contribute)
-## TODO (feel free to contribute)
 
 - Add different variants for E-step and M-steps like stochastic EM and others.
 - Add examples e.g., MNIST dataset and Bernoulli mixtures.
