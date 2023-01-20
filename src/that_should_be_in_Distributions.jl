@@ -36,3 +36,12 @@ end
 function fit_mle(g::Distribution{Multivariate,S}, args...) where {S}
     fit_mle(typeof(g), args...)
 end
+
+fit_mle(::Type{<:Dirac}, x::AbstractArray{T}) where {T<:Real} = length(unique(x)) == 1 ? Dirac(first(x)) : Dirac(NaN)
+function fit_mle(::Type{<:Dirac}, x::AbstractArray{T}, w::AbstractArray{Float64}) where {T<:Real}
+    n = length(x)
+    if n != length(w)
+        throw(DimensionMismatch("Inconsistent array lengths."))
+    end
+    return length(unique(x[findall(!iszero, w)])) == 1 ? Dirac(first(x)) : Dirac(NaN)
+end
