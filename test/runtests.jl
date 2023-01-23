@@ -124,3 +124,45 @@ end
     @test θ₀ ≈ p[2][1] rtol = rtol
     @test σ₀ ≈ p[2][2] rtol = rtol
 end
+
+@testset "Univariate continuous Mixture of (mixture + Normal)" begin
+    N = 50_000
+    seed = MersenneTwister(0)
+    θ₁ = -2
+    θ₂ = 2
+    σ₁ = 1
+    σ₂ = 1.5
+    θ₀ = 0.1
+    σ₀ = 0.2
+
+    α = 1 / 2
+    β = 0.3
+
+    rtol = 3e-2 # 3% 
+    d1 = MixtureModel([Normal(θ₁, σ₁), Laplace(θ₂, σ₂)], [α, 1 - α])
+    d2 = Normal(θ₀, σ₀)
+    mix_true = MixtureModel([d1, d2], [β, 1 - β])
+    y = rand(seed, mix_true, N)
+
+    # We choose initial guess very close to the true solution just to show the EM algorithm convergence.
+    # This particular choice of mixture of mixture Gaussian with another Gaussian is non identifiable hence we execpt other solution far away from the true solution
+    d1_guess = MixtureModel([Normal(θ₁ - 4, σ₁ + 2), Laplace(θ₂ + 2, σ₂ - 1)], [α + 0.1, 1 - α - 0.1])
+    d2_guess = Normal(θ₀ + 2, 10σ₀)
+
+    mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
+    mix_mle = fit_mle(mix_guess, y; display=:iter, tol=1e-3, robust=false, infos=false)
+    # without print
+    # 1.368 s (17002715 allocations: 1.48 GiB)
+    #  1.485 s (17853393 allocations: 1.61 GiB)
+    y_guess = rand(seed, mix_mle, N)
+
+    @test probs(mix_mle) ≈ [β, 1 - β] rtol = rtol
+    p = params(mix_mle)[1]
+    @test p[1][2] ≈ [α, 1 - α] rtol = rtol
+    @test θ₁ ≈ p[1][1][1][1] rtol = rtol
+    @test σ₁ ≈ p[1][1][1][2] rtol = rtol
+    @test θ₂ ≈ p[1][1][2][1] rtol = rtol
+    @test σ₂ ≈ p[1][1][2][2] rtol = rtol
+    @test θ₀ ≈ p[2][1] rtol = rtol
+    @test σ₀ ≈ p[2][2] rtol = rtol
+end
