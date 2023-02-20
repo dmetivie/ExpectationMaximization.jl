@@ -20,15 +20,20 @@ end
     fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; display=:none, maxiter=1000, tol=1e-3, robust=false, infos=false)
 
 Use `fit_mle` (EM) algorithm for all the different initial conditions in the mix array and select the one with the largest likelihood.
+It uses try and catch to avoid errors messages in case EM converges toward a singular solution (probably using robust should be enough in most case to avoid errors). 
 """
 function fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; display=:none, maxiter=1000, tol=1e-3, robust=false, infos=false)
 
     mx_max, history_max = fit_mle(mix[1], y, weights...; display=display, maxiter=maxiter, tol=tol, robust=robust, infos=true)
     for j in eachindex(mix)[2:end]
-        mx_new, history_new = fit_mle(mix[j], y, weights...; display=display, maxiter=maxiter, tol=tol, robust=robust, infos=true)
-        if history_max["logtots"][end] < history_new["logtots"][end]
-            mx_max = mx_new
-            history_max = copy(history_new)
+        try
+            mx_new, history_new = fit_mle(mix[j], y, weights...; display=display, maxiter=maxiter, tol=tol, robust=robust, infos=true)
+            if history_max["logtots"][end] < history_new["logtots"][end]
+                mx_max = mx_new
+                history_max = copy(history_new)
+            end
+        catch
+            continue
         end
     end
     return infos ? (mx_max, history_max) : mx_max

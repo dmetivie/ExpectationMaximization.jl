@@ -14,7 +14,7 @@ using Random
     mix_true = MixtureModel([Exponential(θ₁), Gamma(α, θ₂)], [β, 1 - β])
     y = rand(seed, mix_true, N)
     mix_guess = MixtureModel([Exponential(1), Gamma(0.5, 1)], [0.5, 1 - 0.5])
-    mix_mle = fit_mle(mix_guess, y; display=:iter, tol=1e-3, robust=false, infos=false)
+    mix_mle = fit_mle(mix_guess, y; display=:none, tol=1e-3, robust=false, infos=false)
 
     p = params(mix_mle)[1]
     @test isapprox([β, 1 - β], probs(mix_mle); rtol=rtol)
@@ -48,7 +48,7 @@ end
     mix_guess = MixtureModel([D₁guess, D₂guess], [0.4, 0.6])
 
     # Fit MLE
-    mix_mle = fit_mle(mix_guess, y; display=:iter, tol=1e-3, robust=false, infos=false)
+    mix_mle = fit_mle(mix_guess, y; display=:none, tol=1e-3, robust=false, infos=false)
 
     p = params(mix_mle)[1]
     @test isapprox([β, 1 - β], probs(mix_mle); rtol=rtol)
@@ -79,7 +79,7 @@ end
     mix_guess = MixtureModel([product_distribution(Bernoulli.(2θ[:, i] / 3)) for i in 1:K], [0.25, 0.55, 0.2])
 
     # Fit MLE
-    mix_mle = fit_mle(mix_guess, y; display=:iter, tol=1e-3, robust=false, infos=false)
+    mix_mle = fit_mle(mix_guess, y; display=:none, tol=1e-3, robust=false, infos=false)
 
     p = params(mix_mle)[1]
     @test isapprox([β / 2, 1 - β, β / 2], probs(mix_mle); rtol=rtol)
@@ -111,7 +111,7 @@ end
     d2_guess = Normal(θ₀ + 0.1, σ₀ - 0.01)
 
     mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
-    mix_mle = fit_mle(mix_guess, y; display=:iter, tol=1e-3, robust=false, infos=false)
+    mix_mle = fit_mle(mix_guess, y; display=:none, tol=1e-3, robust=false, infos=false)
     y_guess = rand(seed, mix_mle, N)
 
     @test probs(mix_mle) ≈ [β, 1 - β] rtol = rtol
@@ -150,7 +150,7 @@ end
     d2_guess = Normal(θ₀ + 2, 10σ₀)
 
     mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
-    mix_mle = fit_mle(mix_guess, y; display=:iter, tol=1e-3, robust=false, infos=false)
+    mix_mle = fit_mle(mix_guess, y; display=:none, tol=1e-3, robust=false, infos=false)
     # without print
     # 1.368 s (17002715 allocations: 1.48 GiB)
     #  1.485 s (17853393 allocations: 1.61 GiB)
