@@ -1,33 +1,41 @@
 """
-    fit_mle(mix::MixtureModel, y::AbstractVecOrMat, [w::AbstractVector]; display = :none, maxiter = 1000, tol = 1e-3, robust = false)
-
-Use Expectation Maximization (EM) algorithm to maximize the Loglikelihood (fit) the mixture to an i.i.d sample `y`.
-The `mix` agrument is a mixture that is used to initilize the EM algorithm.
+    fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
+Use the an Expectation Maximization (EM) algorithm to maximize the Loglikelihood (fit) the mixture with an i.i.d sample `y`.
+The `mix` input is a mixture that is used to initilize the EM algorithm.
+- `method` determines the algorithm used.
+- `infos = true` returns a `Dict` with informations on the algorithm.
+- `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
+- `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops. 
+- `display` value can be `:none`, `:iter`, `:final` to display Loglikelihood evolution at each iterations `:iter` or just the final one `:final`
 """
-function fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; display=:none, maxiter=1000, tol=1e-3, robust=false, infos=false)
+function fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 
     # Initial parameters
     α = copy(probs(mix))
     dists = copy(components(mix))
 
     #TODO is there a better way to avoid when infos = false allocating history?
-    history = fit_mle!(α, dists, y, weights...; display=display, maxiter=maxiter, tol=tol, robust=robust)
+    if isempty(weights)
+        history = fit_mle!(α, dists, y, method; display=display, maxiter=maxiter, atol=atol, robust=robust)
+    else
+        history = fit_mle!(α, dists, y, weights..., method; display=display, maxiter=maxiter, atol=atol, robust=robust)
+    end
 
     return infos ? (MixtureModel(dists, α), history) : MixtureModel(dists, α)
 end
 
 """
-    fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; display=:none, maxiter=1000, tol=1e-3, robust=false, infos=false)
+    fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 
-Use `fit_mle` (EM) algorithm for all the different initial conditions in the mix array and select the one with the largest likelihood.
+Do the same as `fit_mle` for each (initial) mixtures in the mix array. Then it selects the one with the largest loglikelihood.
 It uses try and catch to avoid errors messages in case EM converges toward a singular solution (probably using robust should be enough in most case to avoid errors). 
 """
-function fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; display=:none, maxiter=1000, tol=1e-3, robust=false, infos=false)
+function fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 
-    mx_max, history_max = fit_mle(mix[1], y, weights...; display=display, maxiter=maxiter, tol=tol, robust=robust, infos=true)
+    mx_max, history_max = fit_mle(mix[1], y, weights...; method = method, display=display, maxiter=maxiter, atol=atol, robust=robust, infos=true)
     for j in eachindex(mix)[2:end]
         try
-            mx_new, history_new = fit_mle(mix[j], y, weights...; display=display, maxiter=maxiter, tol=tol, robust=robust, infos=true)
+            mx_new, history_new = fit_mle(mix[j], y, weights...; method = method, display=display, maxiter=maxiter, atol=atol, robust=robust, infos=true)
             if history_max["logtots"][end] < history_new["logtots"][end]
                 mx_max = mx_new
                 history_max = copy(history_new)
@@ -39,15 +47,15 @@ function fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weight
     return infos ? (mx_max, history_max) : mx_max
 end
 
-function E_step!(LL::AbstractMatrix, c::AbstractVector, γ::AbstractMatrix, dists::AbstractVector{F} where {F<:Distribution}, α::AbstractVector, y::AbstractVector; robust=false)
+function E_step!(LL::AbstractMatrix{T}, c::AbstractVector{T}, γ::AbstractMatrix{T}, dists::AbstractVector{F} where {F<:Distribution}, α::AbstractVector, y::AbstractVector{<:Real}; robust=false) where {T<:AbstractFloat}
     # evaluate likelihood for each type k
     for k = eachindex(dists)
-        LL[:, k] = log(α[k]) .+ logpdf.(dists[k], y)
+        LL[:, k] .= log(α[k]) .+ logpdf.(dists[k], y)
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
-    c[:] = logsumexp(LL, dims=2)
-    γ[:, :] = exp.(LL .- c)
+    logsumexp!(c, LL) # c[:] = logsumexp(LL, dims=2)
+    γ[:, :] .= exp.(LL .- c)
 end
 
 function E_step!(LL::AbstractMatrix, c::AbstractVector, γ::AbstractMatrix, dists::AbstractVector{F} where {F<:Distribution}, α::AbstractVector, y::AbstractMatrix; robust=false)
@@ -64,123 +72,41 @@ function E_step!(LL::AbstractMatrix, c::AbstractVector, γ::AbstractMatrix, dist
     γ[:, :] = exp.(LL .- c)
 end
 
+# Utilities 
+
 size_sample(y::AbstractMatrix) = size(y, 2)
 size_sample(y::AbstractVector) = length(y)
 
-function fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat;
-    display=:none, maxiter=1000, tol=1e-3, robust=false)
+argmaxrow(M) = [argmax(r) for r in eachrow(M)]
 
-    @argcheck display in [:none, :iter, :final]
-    @argcheck maxiter >= 0
-
-    N, K = size_sample(y), length(dists)
-    history = Dict("converged" => false, "iterations" => 0, "logtots" => zeros(0))
-
-    # Allocate memory for in-place updates
-
-    LL = zeros(N, K)
-    γ = similar(LL)
-    c = zeros(N)
-
-    # E-step
-    E_step!(LL, c, γ, dists, α, y; robust=robust)
-
-    # Loglikelihood
-    logtot = sum(c)
-    (display == :iter) && println("Iteration 0: logtot = $logtot")
-
-    for it = 1:maxiter
-
-        # M-step
-        # with γ in hand, maximize (update) the parameters
-        α[:] = mean(γ, dims=1)
-        dists[:] = [fit_mle(dists[k], y, γ[:, k]) for k = 1:K]
-
-        # E-step
-        # evaluate likelihood for each type k
-        E_step!(LL, c, γ, dists, α, y; robust=robust)
-
-        # Loglikelihood
-        logtotp = sum(c)
-        (display == :iter) && println("Iteration $it: logtot = $logtotp")
-
-        push!(history["logtots"], logtotp)
-        history["iterations"] += 1
-
-        if abs(logtotp - logtot) < tol
-            (display in [:iter, :final]) &&
-                println("EM converged in $it iterations, logtot = $logtotp")
-            history["converged"] = true
-            break
-        end
-
-        logtot = logtotp
-    end
-
-    if !history["converged"]
-        if display in [:iter, :final]
-            println("EM has not converged after $(history["iterations"]) iterations, logtot = $logtot")
-        end
-    end
-
-    return history
+"""
+    most_likely_cat(mix::MixtureModel, y::AbstractVector; robust=false)
+Evaluate the most likely category of each observations.
+- `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
+"""
+function most_likely_cat(mix::MixtureModel, y::AbstractVector; robust=false)
+    return argmaxrow(likelihood_per_cat(mix, y; robust=robust))
 end
 
-function fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, w::AbstractVector;
-    display=:none, maxiter=1000, tol=1e-3, robust=false)
+"""
+    likelihood_per_cat(mix::MixtureModel, y::AbstractVector; robust=false)
+Evaluate the the probability for each observations to belong to a category.
+- `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 
-    @argcheck display in [:none, :iter, :final]
-    @argcheck maxiter >= 0
-    N, K = size_sample(y), length(dists)
-    @argcheck length(w) == N
-    history = Dict("converged" => false, "iterations" => 0, "logtots" => zeros(0))
-
-    # Allocate memory for in-place updates
-
+"""
+function likelihood_per_cat(mix::MixtureModel, y::AbstractVector; robust=false)
+    # evaluate likelihood for each components k
+    dists = mix.components
+    α = probs(mix)
+    K = length(dists)
+    N = length(y)
     LL = zeros(N, K)
-    γ = similar(LL)
     c = zeros(N)
-
-    # E-step
-    E_step!(LL, c, γ, dists, α, y; robust=robust)
-
-    # Loglikelihood
-    logtot = sum(w[n] * c[n] for n in 1:N) #dot(w, c)
-    (display == :iter) && println("Iteration 0: logtot = $logtot")
-
-    for it = 1:maxiter
-
-        # M-step
-        # with γ in hand, maximize (update) the parameters
-        α[:] = mean(γ, weights(w), dims=1)
-        dists[:] = [fit_mle(dists[k], y, w[:] .* γ[:, k]) for k = 1:K]
-
-        # E-step
-        # evaluate likelihood for each type k
-        E_step!(LL, c, γ, dists, α, y; robust=robust)
-
-        # Loglikelihood
-        logtotp = sum(w[n] * c[n] for n in eachindex(c)) #dot(w, c)
-        (display == :iter) && println("Iteration $it: logtot = $logtotp")
-
-        push!(history["logtots"], logtotp)
-        history["iterations"] += 1
-
-        if abs(logtotp - logtot) < tol
-            (display in [:iter, :final]) &&
-                println("EM converged in $it iterations, logtot = $logtotp")
-            history["converged"] = true
-            break
-        end
-
-        logtot = logtotp
+    for k = eachindex(dists)
+        LL[:, k] .= log(α[k]) .+ logpdf.(dists[k], y)
     end
-
-    if !history["converged"]
-        if display in [:iter, :final]
-            println("EM has not converged after $(history["iterations"]) iterations, logtot = $logtot")
-        end
-    end
-
-    return history
+    robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
+    # get posterior of each category
+    logsumexp!(c, LL) # c[:] = logsumexp(LL, dims=2)
+    return exp.(LL .- c)
 end
