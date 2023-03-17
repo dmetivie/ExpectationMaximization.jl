@@ -1,7 +1,7 @@
 name = "ExpectationMaximization"
 uuid = "e1fe09cc-5134-44c2-a941-50f4cd97986a"
-authors = ["David Métivier <46794064+dmetivie@users.noreply.github.com> and contributors"]
-version = "0.1.6"
+authors = ["David Métivier <david.metivier@inrae.fr> and contributors"]
+version = "0.2.0"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
