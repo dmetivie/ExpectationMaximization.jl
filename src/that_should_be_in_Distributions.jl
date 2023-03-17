@@ -2,6 +2,7 @@
 #! Currently it is not accepted and may never be.
 
 ## * Instance version of `fit_mle` * ##
+
 """
 Now "instance" version of `fit_mle` is supported (in addition of the current "type" version). 
 Example: `fit_mle(Bernoulli(0.2), x)` is accepted in addition of `fit_mle(Bernoulli, x)` this allows compatibility with how `fit_mle(g::Product)` and `fit_mle(g::MixtureModel)` are written.
@@ -22,8 +23,8 @@ fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Categorical} = fit_mle(T, n
 ## * `fit_mle` for `product_distribution`
 
 """
-fit_mle(g::Product, x::AbstractMatrix)
-fit_mle(g::Product, x::AbstractMatrix, γ::AbstractVector)
+    fit_mle(g::Product, x::AbstractMatrix)
+    fit_mle(g::Product, x::AbstractMatrix, γ::AbstractVector)
 
 The `fit_mle` for multivariate Product distributions `g` is the `product_distribution` of `fit_mle` of each components of `g`.
 Product is meant to be depreacated in next version of `Distribution.jl`. Use the analog `VectorOfUnivariateDistribution` type instead.
@@ -65,6 +66,10 @@ params(g::Product) = params.(g.v)
 
 fit_mle(::Type{<:Dirac}, x::AbstractArray{T}) where {T<:Real} = length(unique(x)) == 1 ? Dirac(first(x)) : Dirac(NaN)
 
+"""
+    fit_mle(::Type{<:Dirac}, x::AbstractArray{<:Real}[, w::AbstractArray{<:Real}])
+`fit_mle` for `Dirac` distribution (weighted or not) data sets.
+"""
 function fit_mle(::Type{<:Dirac}, x::AbstractArray{T}, w::AbstractArray{Float64}) where {T<:Real}
     n = length(x)
     if n != length(w)
@@ -73,6 +78,10 @@ function fit_mle(::Type{<:Dirac}, x::AbstractArray{T}, w::AbstractArray{Float64}
     return length(unique(x[findall(!iszero, w)])) == 1 ? Dirac(first(x)) : Dirac(NaN)
 end
 
+"""
+    fit_mle(::Type{<:Laplace}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
+`fit_mle` for `Laplace` distribution weighted data sets.
+"""
 function fit_mle(::Type{<:Laplace}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
     xc = similar(x)
     copyto!(xc, x)

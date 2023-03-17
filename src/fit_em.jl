@@ -2,6 +2,7 @@
     fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 Use the an Expectation Maximization (EM) algorithm to maximize the Loglikelihood (fit) the mixture with an i.i.d sample `y`.
 The `mix` input is a mixture that is used to initilize the EM algorithm.
+- `weights` when provided will computed a weighted version of the EM. (Useful for fitting mixture of mixtures)
 - `method` determines the algorithm used.
 - `infos = true` returns a `Dict` with informations on the algorithm.
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
@@ -28,7 +29,7 @@ end
     fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 
 Do the same as `fit_mle` for each (initial) mixtures in the mix array. Then it selects the one with the largest loglikelihood.
-It uses try and catch to avoid errors messages in case EM converges toward a singular solution (probably using robust should be enough in most case to avoid errors). 
+Warning: It uses try and catch to avoid errors messages in case EM converges toward a singular solution (probably using robust should be enough in most case to avoid errors). 
 """
 function fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 
@@ -89,24 +90,20 @@ function most_likely_cat(mix::MixtureModel, y::AbstractVector; robust=false)
 end
 
 """
-    likelihood_per_cat(mix::MixtureModel, y::AbstractVector; robust=false)
+    likelihood_per_cat(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
 Evaluate the the probability for each observations to belong to a category.
-- `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
+- `robust = true` will prevent the (log)likelihood to under(overflow)flow to `-∞` (or `∞`).
 
 """
-function likelihood_per_cat(mix::MixtureModel, y::AbstractVector; robust=false)
+function likelihood_per_cat(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
     # evaluate likelihood for each components k
     dists = mix.components
     α = probs(mix)
     K = length(dists)
     N = length(y)
     LL = zeros(N, K)
+    γ = similar(LL)
     c = zeros(N)
-    for k = eachindex(dists)
-        LL[:, k] .= log(α[k]) .+ logpdf.(dists[k], y)
-    end
-    robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
-    # get posterior of each category
-    logsumexp!(c, LL) # c[:] = logsumexp(LL, dims=2)
-    return exp.(LL .- c)
+    E_step!(LL, c, γ, dists, α, y; robust=robust)
+    return γ
 end
