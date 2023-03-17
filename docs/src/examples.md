@@ -8,7 +8,7 @@ using StatsPlots
 
 ## Univariate continuous  
 
-### Exponential + Laplace + Uniform
+### Exponential + Laplace + Exponential
 
 ```@example 1
 # Parameters
