@@ -49,7 +49,7 @@ plot!(pmix, x, pdf.(mix_mle_S, x), label = "fit sEM")
 ploss = plot(hist_C["logtots"], label = "ClassicEM with $(hist_C["iterations"]) iterations", c = 3, xlabel = "EM iterations", ylabel = "Log Likelihood")
 plot!(ploss, hist_S["logtots"], label = "StochasticEM  with $(hist_S["iterations"]) iterations", c = 4, s = :dot)
 
-plot(pmix, ploss, size = (800, 600))
+plot(pmix, ploss)
 ```
 
 ### Mixture of Mixture and univariate
@@ -80,7 +80,7 @@ mix_mle, hist_C = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, 
 y_guess = rand(mix_mle, N)
 
 x = -20:0.1:20
-pmix = plot(x, pdf.(mix_true, x), label = "True", ylabel = "PDF", size = (800, 600))
+pmix = plot(x, pdf.(mix_true, x), label = "True", ylabel = "PDF")
 plot!(pmix, x, pdf.(mix_guess, x), label = "Initial guess")
 plot!(pmix, x, pdf.(mix_mle, x), label = "fit EM with $(hist_C["iterations"]) iterations")
 ```

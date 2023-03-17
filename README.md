@@ -1,5 +1,7 @@
 # ExpectationMaximization
 
+[![Docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://dmetivie.github.io/ExpectationMaximization.jl/dev)
+
 This package provides a simple implementation of the Expectation Maximization (EM) algorithm used to fit mixture models.
 Due to [Julia](https://julialang.org/) amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) systems, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is also very powerful! That means that it work on a lot of mixture:
 

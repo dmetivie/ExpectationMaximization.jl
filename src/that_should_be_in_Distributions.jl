@@ -17,8 +17,10 @@ function fit_mle(g::D, args...) where {D<:Distribution}
     fit_mle(typeof(g), args...)
 end
 
-fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Binomial} = fit_mle(T, suffstats(T, ntrials(d), x))
-fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Categorical} = fit_mle(T, ncategories(d), x)
+fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Binomial} =
+    fit_mle(T, suffstats(T, ntrials(d), x))
+fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Categorical} =
+    fit_mle(T, ncategories(d), x)
 
 ## * `fit_mle` for `product_distribution`
 
@@ -31,8 +33,11 @@ Product is meant to be depreacated in next version of `Distribution.jl`. Use the
 """
 function fit_mle(g::Product, x::AbstractMatrix, args...)
     d = size(x, 1)
-    length(g) == d || throw(DimensionMismatch("The dimensions of g and x are inconsistent."))
-    return product_distribution([fit_mle(g.v[s], y, args...) for (s, y) in enumerate(eachrow(x))])
+    length(g) == d ||
+        throw(DimensionMismatch("The dimensions of g and x are inconsistent."))
+    return product_distribution([
+        fit_mle(g.v[s], y, args...) for (s, y) in enumerate(eachrow(x))
+    ])
 end
 
 params(g::Product) = params.(g.v)
@@ -64,13 +69,18 @@ params(g::Product) = params.(g.v)
 #! `fit_mle` (weighted or not) of Dirac and Laplace distribution. I also would prefer that in `Distribution.jl`
 #! See [PR#1676](https://github.com/JuliaStats/Distributions.jl/pull/1676) and a following for Dirac?
 
-fit_mle(::Type{<:Dirac}, x::AbstractArray{T}) where {T<:Real} = length(unique(x)) == 1 ? Dirac(first(x)) : Dirac(NaN)
+fit_mle(::Type{<:Dirac}, x::AbstractArray{T}) where {T<:Real} =
+    length(unique(x)) == 1 ? Dirac(first(x)) : Dirac(NaN)
 
 """
     fit_mle(::Type{<:Dirac}, x::AbstractArray{<:Real}[, w::AbstractArray{<:Real}])
 `fit_mle` for `Dirac` distribution (weighted or not) data sets.
 """
-function fit_mle(::Type{<:Dirac}, x::AbstractArray{T}, w::AbstractArray{Float64}) where {T<:Real}
+function fit_mle(
+    ::Type{<:Dirac},
+    x::AbstractArray{T},
+    w::AbstractArray{Float64},
+) where {T<:Real}
     n = length(x)
     if n != length(w)
         throw(DimensionMismatch("Inconsistent array lengths."))
