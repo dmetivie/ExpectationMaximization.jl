@@ -12,4 +12,4 @@ makedocs(
     pages = pages,
 )
 
-deploydocs(repo = "github.com/dmetivie/ExpectationMaximization.jl.git"; push_preview = true)
+deploydocs(repo = "github.com/dmetivie/ExpectationMaximization.jl.git"; devbranch="main")
