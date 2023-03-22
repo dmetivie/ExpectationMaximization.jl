@@ -20,7 +20,7 @@ You can find the code in [here](https://github.com/dmetivie/ExpectationMaximizat
 
 **Conclusion: this package is about 2 to 10 times faster than Python or R implementations and as about as fast as the dedicated package for GaussianMixturesModel.jl**
 
-![timing_K_2_rudimentary.svg](../../benchmarks/timing_K_2_rudimentary_wo_memory_leak.svg)
+![timing_K_2_rudimentary_wo_memory_leak](https://user-images.githubusercontent.com/46794064/227060680-6027bca0-e0f7-44f2-9365-b8f1c9858e8e.svg)
 
 [^1]: I would have loved that `@btime` with `RCall` and `PyCall` would just [work](https://discourse.julialang.org/t/benchmarking-julia-vs-python-vs-r-with-pycall-and-rcall/37308). 
 I did compare with `R` `microbenchmark` and Python `timeit` (not a pleasing experience).
