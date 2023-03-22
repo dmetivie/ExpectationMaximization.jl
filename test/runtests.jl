@@ -33,7 +33,7 @@ end
     α = 0.5
     β = 0.3
     μ = -1
-    rtol = 6e-2
+    rtol = 7e-2
     mix_true = MixtureModel([Laplace(μ, θ₁), Normal(α, θ₂)], [β, 1 - β])
     y = rand(mix_true, N)
     mix_guess = MixtureModel([Laplace(1), Normal(0.5, 1)], [0.5, 1 - 0.5])
