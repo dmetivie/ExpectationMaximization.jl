@@ -2,7 +2,7 @@
     fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 Use the an Expectation Maximization (EM) algorithm to maximize the Loglikelihood (fit) the mixture with an i.i.d sample `y`.
 The `mix` input is a mixture that is used to initilize the EM algorithm.
-- `weights` when provided will computed a weighted version of the EM. (Useful for fitting mixture of mixtures)
+- `weights` when provided, it will compute a weighted version of the EM. (Useful for fitting mixture of mixtures)
 - `method` determines the algorithm used.
 - `infos = true` returns a `Dict` with informations on the algorithm (converged, iteration number, loglikelihood).
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
@@ -160,7 +160,7 @@ argmaxrow(M) = [argmax(r) for r in eachrow(M)]
 Evaluate the most likely category for each observations given a `MixtureModel`.
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 """
-function predict(mix::MixtureModel, y::AbstractVector; robust = false)
+function predict(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
     return argmaxrow(predict_proba(mix, y; robust = robust))
 end
 
@@ -174,7 +174,7 @@ function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
     dists = mix.components
     α = probs(mix)
     K = length(dists)
-    N = length(y)
+    N = size_sample(y)
     LL = zeros(N, K)
     γ = similar(LL)
     c = zeros(N)
