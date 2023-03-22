@@ -230,6 +230,6 @@ end
         z[i] = rand(Categorical(α))
         y[i] = rand(dists[z[i]])
     end
-    ẑ = most_likely_cat(m, y)
+    ẑ = predict(m, y)
     @test count(ẑ .== z) / N > 0.85
 end

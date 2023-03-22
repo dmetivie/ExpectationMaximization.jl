@@ -19,5 +19,5 @@ include("fit_em.jl")
 include("that_should_be_in_Distributions.jl")
 
 export ClassicEM, StochasticEM
-export likelihood_per_cat, most_likely_cat
+export predict_proba, predict
 end

@@ -99,3 +99,12 @@ function fit_mle(::Type{<:Laplace}, x::AbstractArray{<:Real}, w::AbstractArray{<
     xc .= abs.(x .- m)
     return Laplace(m, mean(xc, weights(w)))
 end
+
+"""
+    fit_mle(::Type{<:Uniform}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
+`fit_mle` for `Uniform` distribution weighted data sets. It is just the same as unweigted (removing zero weighted data).
+"""
+function fit_mle(::Type{<:Uniform}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
+    size(x) == size(w) || throw(DimensionMismatch("Inconsistent array lengths."))
+    return fit_mle(Uniform, x[findall(w .!= 0)])
+end

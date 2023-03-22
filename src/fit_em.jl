@@ -4,7 +4,7 @@ Use the an Expectation Maximization (EM) algorithm to maximize the Loglikelihood
 The `mix` input is a mixture that is used to initilize the EM algorithm.
 - `weights` when provided will computed a weighted version of the EM. (Useful for fitting mixture of mixtures)
 - `method` determines the algorithm used.
-- `infos = true` returns a `Dict` with informations on the algorithm.
+- `infos = true` returns a `Dict` with informations on the algorithm (converged, iteration number, loglikelihood).
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 - `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops. 
 - `display` value can be `:none`, `:iter`, `:final` to display Loglikelihood evolution at each iterations `:iter` or just the final one `:final`
@@ -25,7 +25,7 @@ function fit_mle(
     α = copy(probs(mix))
     dists = copy(components(mix))
 
-    #TODO is there a better way to avoid when infos = false allocating history?
+    #TODO is there a better way to do that when weight are not provided ? + avoid when infos = false allocating history?
     if isempty(weights)
         history = fit_mle!(
             α,
@@ -156,21 +156,20 @@ size_sample(y::AbstractVector) = length(y)
 argmaxrow(M) = [argmax(r) for r in eachrow(M)]
 
 """
-    most_likely_cat(mix::MixtureModel, y::AbstractVector; robust=false)
-Evaluate the most likely category of each observations.
+    predict(mix::MixtureModel, y::AbstractVector; robust=false)
+Evaluate the most likely category for each observations given a `MixtureModel`.
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 """
-function most_likely_cat(mix::MixtureModel, y::AbstractVector; robust = false)
-    return argmaxrow(likelihood_per_cat(mix, y; robust = robust))
+function predict(mix::MixtureModel, y::AbstractVector; robust = false)
+    return argmaxrow(predict_proba(mix, y; robust = robust))
 end
 
 """
-    likelihood_per_cat(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
-Evaluate the the probability for each observations to belong to a category.
+    predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
+Evaluate the probability for each observations to belong to a category given a `MixtureModel`..
 - `robust = true` will prevent the (log)likelihood to under(overflow)flow to `-∞` (or `∞`).
-
 """
-function likelihood_per_cat(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
+function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
     # evaluate likelihood for each components k
     dists = mix.components
     α = probs(mix)
