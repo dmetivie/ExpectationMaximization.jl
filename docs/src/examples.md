@@ -1,3 +1,4 @@
+
 # Examples
 
 ```@example 1
@@ -8,7 +9,7 @@ using StatsPlots
 
 ## Univariate continuous  
 
-### Exponential + Laplace + Exponential
+### Normal + Laplace + Exponential
 
 ```@example 1
 # Parameters
@@ -87,7 +88,39 @@ plot!(pmix, x, pdf.(mix_mle, x), label = "fit EM with $(hist_C["iterations"]) it
 
 ## Multivariate mixtures
 
-### Multivariate Gaussian Mixtures
+### Old Faithful Geyser Data (Multivariate Normal)
+
+This seems like a canonical example for Gaussian mixtures, so let's do it. Note the use of the amazing [`ClipData.jl`](https://github.com/pdeffebach/ClipData.jl).
+
+Using [Clustering.jl](https://juliastats.org/Clustering.jl/dev/index.html) package, one could easily initilize the `mix_guess` using K-means algorithms (and others).
+
+```julia
+using ClipData, DataFrames, StatsPlots
+using Distributions, ExpectationMaximization
+# https://gist.githubusercontent.com/curran/4b59d1046d9e66f2787780ad51a1cd87/raw/9ec906b78a98cf300947a37b56cfe70d01183200/data.tsv
+data = cliptable() |> DataFrame
+
+@df data scatter(:eruptions, :waiting, label = "Observations", xlabel = "Duration of the eruption (min)", ylabel = " Duration until the next eruption (min)")
+
+y = permutedims(Matrix(data))
+
+D₁guess = MvNormal([22, 55], [1 0.6; 0.6 1])
+D₂guess = MvNormal([4, 80], [1 0.2; 0.2 1])
+mix_guess = MixtureModel([D₁guess, D₂guess], [1/2,1/2])
+
+mix_mle, info = fit_mle(mix_guess, y, infos = true)
+
+# mix_mleS, infoS = fit_mle(mix_guess, y, infos = true, method = StochasticEM())
+
+xrange = 1:0.05:6
+yrange = 40:0.1:100
+zlevel = [pdf(mix_mle, [x, y]) for y in yrange, x in xrange]
+contour!(xrange, yrange, zlevel)
+```
+
+![Old faithful MLE fit](../../img/old_faithful.svg)
+
+### Another Multivariate Gaussian Mixtures
 
 ```julia
 θ₁ = [-1, 1]
@@ -114,25 +147,54 @@ mix_guess = MixtureModel([D₁guess, D₂guess], [0.4, 0.6])
 mix_mle = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
 ```
 
-### Bernoulli Mixture
+### MNIST dataset: Bernoulli Mixture
+
+A classical example in clustering (pattern recognition) is the MNIST handwritten digits' data sets.
+One of the simplest ways to address the problem is to fit a Bernoulli mixture with 10 components for the ten digits 0, 1, 2, ..., 9 (see [Pattern Recognition and Machine Learning by C. Bishop, Section 9.3.3.](https://d1wqtxts1xzle7.cloudfront.net/30428242/bg0137-libre.pdf?1390888009=&response-content-disposition=inline%3B+filename%3DPattern_recognition_and_machine_learning.pdf&Expires=1679414339&Signature=fEpdcg3ZXYvfcSTtQBe6pF2UqhlrEV2hG0~djNJrglRKQRmt3iYE1OmgoEO0byuCs5HNRLFXKqKNs7l5ry-1pLTzMU87W8QqU8zn0STVozwWL-T2Yd-dmEjw-f8bbrvoq5WOzcUfj25MxLCfJRx66Q~zJwNDJYYnFeAyYFJdWnfPBf3GsR7nR6GYCQH~qvLfzGh~zOYHa7Gmr3yvz9mkjWFWMM4pAikNTmmw6F~N1rqXra2ZIL4kQqvfG-WjU-j0G5TdItSYn2FfoLcXPHXvA1nLfTB2vY5sGY8YKgFqez-~eQKt72diTZZnKNBJKnnnbZ0iWJzuTqzsqi2C4hVpLQ__&Key-Pair-Id=APKAJLOHF5GGSLRBV4ZA) for more context).
+Each of the components is a product distribution of $28\times 28$ independent Bernoulli. This simple (but rather big) model can be fitted via the EM algorithm.
 
 ```julia
-S = 10
-K = 3
-θ = zeros(S, K)
-θ[:, 1] = (1:S) / S .- 0.05 # Bernoulli parameters
-θ[:, 2] = (S:-1:1) / 2S # Bernoulli parameters
-θ[:, 3] = ones(S) + 0.1 * [isodd(i) ? -1 : 1 for i in 1:S] .- 0.4# Bernoulli parameters
-β = 0.3
+using MLDatasets: MNIST
+using Distributions, ExpectationMaximization
+using Plots
 
-mix_true = MixtureModel([product_distribution(Bernoulli.(θ[:, i])) for i in 1:K], [β / 2, 1 - β, β / 2])
+binarify(x) = x != 0 ? true : false
 
-# Generate samples from the true distribution
-y = rand(mix_true, N)
+dataset = MNIST(:train)
+X, y = dataset[:]
+Xb = binarify.(reshape(X, (28^2, size(X, 3))))
+id = [findall(y .∈ i) for i in 0:9]
 
-# Initial Condition
-mix_guess = MixtureModel([product_distribution(Bernoulli.(2θ[:, i] / 3)) for i in 1:K], [0.25, 0.55, 0.2])
+# Very Informed guess (it is not true clustering since I use the label for the initial condition (IC). It also works good with other not too far IC )
+dist_guess = [product_distribution(Bernoulli.(mean(Xb[:,l] for l in id[i]))) for i in eachindex(id)]
+α = fill(1/10, 10)
 
-# Fit MLE
-mix_mle = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
+mix_guess = MixtureModel(dist_guess, α)
+pguess = [heatmap(reshape(succprob.(dist_guess[i].v), 28,28)', yflip = :true, cmap = :grays, clims = (0,1), ticks = :none) for i in eachindex(id)]
+plot(pguess..., layout = (2,5), size = (900,300))
+
+@time mix_mle, info = fit_mle(mix_guess, Xb, infos = true, display = :iter, robust = true)
+
+# Plot the fitted mixture components
+pmle = [heatmap(reshape(succprob.(components(mix_mle)[i].v), 28,28)', yflip = :true, cmap = :grays, clims = (0,1), ticks = :none) for i in eachindex(id)]
+plot(pmle..., layout = (2,5), size = (900,300))
+
+# Test results
+test_data = MNIST(:test)
+test_X, test_y = test_data[:]
+test_Xb = binarify.(reshape(test_X, (28^2,size(test_X, 3))))
+
+predict_y = predict(mix_mle, test_Xb, robust = true)
+
+println("There are 28^2*10 + 9 = ", 28^2*10 + (10-1), " parameters in the model.")
+println("Learning accuracy ", count(predict_y.-1 .== test_y)/length(test_y), "%.")
 ```
+
+```jldoctest
+There are 28^2*10 + 9 = 7849 parameters in the model.
+
+Learning accuracy 0.6488%.
+```
+
+The accuracy is of course far from the current best models (though it has a relative number of parameters). For example, this model assumes conditional independence of each pixel given the components (which is far from being true) + I am not sure the EM found the global maxima (and not just a local one).
+![MNIST MLE fit](../../img/fit_mle_Bernoulli_mixtures.svg)
