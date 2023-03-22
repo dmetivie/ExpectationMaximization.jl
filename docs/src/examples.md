@@ -118,7 +118,7 @@ zlevel = [pdf(mix_mle, [x, y]) for y in yrange, x in xrange]
 contour!(xrange, yrange, zlevel)
 ```
 
-![Old faithful MLE fit](../../img/old_faithful.svg)
+![old_faithful](https://user-images.githubusercontent.com/46794064/227059681-53e08e6d-8a77-4f52-b1dc-50e3e3794763.svg)
 
 ### Another Multivariate Gaussian Mixtures
 
@@ -197,4 +197,5 @@ Learning accuracy 0.6488%.
 ```
 
 The accuracy is of course far from the current best models (though it has a relative number of parameters). For example, this model assumes conditional independence of each pixel given the components (which is far from being true) + I am not sure the EM found the global maxima (and not just a local one).
-![MNIST MLE fit](../../img/fit_mle_Bernoulli_mixtures.svg)
+
+![fit_mle_Bernoulli_mixtures](https://user-images.githubusercontent.com/46794064/227059598-1ae0ec10-b802-40ef-bc85-ffbdafbf276e.svg)
