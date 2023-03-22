@@ -183,7 +183,7 @@ end
     σ₀ = 0.2
 
     α = 1 / 2
-    β = 0.3
+    β = 0.5
 
     rtol = 3e-2 # 3% 
     d1 = MixtureModel([Normal(θ₁, σ₁), Laplace(θ₂, σ₂)], [α, 1 - α])
