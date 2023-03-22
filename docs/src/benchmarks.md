@@ -22,9 +22,9 @@ You can find the code in [here](https://github.com/dmetivie/ExpectationMaximizat
 
 ![timing_K_2_rudimentary.svg](../../benchmarks/timing_K_2_rudimentary_wo_memory_leak.svg)
 
-[^1]: I would have loved that `@btime` with `RCall` and `PyCall` would just [work](https://discourse.julialang.org/t/benchmarking-julia-vs-python-vs-r-with-pycall-and-rcall/37308). 
+[^1]: I would have loved that `@btime` with `RCall` and `PyCall` would just [work](https://discourse.julialang.org/t/benchmarking-julia-vs-python-vs-r-with-pycall-and-rcall/37308).
 I did compare with `R` `microbenchmark` and Python `timeit` (not a pleasing experience).
 
-[^2]: This is suspect since it triggers a warning regarding Kmean which I do not want to use. I asked a question [here](https://github.com/scikit-learn/scikit-learn/discussions/25916). 
+[^2]: This is suspect since it triggers a warning regarding K-means which I do not want to use. I asked a question [here](https://github.com/scikit-learn/scikit-learn/discussions/25916).
 
-[^3]: It overflows very quickly for $n>500$ or so. I think it is because of naive impementation of [`logsumexp`](https://github.com/sseemayer/mixem/blob/2ffd990b22a12d48313340b427feae73bcf6062d/mixem/em.py#L5).
+[^3]: It overflows very quickly for $n>500$ or so. I think it is because of naive implementation of [`logsumexp`](https://github.com/sseemayer/mixem/blob/2ffd990b22a12d48313340b427feae73bcf6062d/mixem/em.py#L5).
