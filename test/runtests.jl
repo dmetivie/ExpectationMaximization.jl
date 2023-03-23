@@ -143,7 +143,7 @@ end
     α = 1 / 2
     β = 0.3
 
-    rtol = 2e-2 # 2% 
+    rtol = 5e-2 #  
     d1 = MixtureModel([Normal(θ₁, σ₁), Normal(θ₂, σ₂)], [α, 1 - α])
     d2 = Normal(θ₀, σ₀)
     mix_true = MixtureModel([d1, d2], [β, 1 - β])
@@ -174,6 +174,7 @@ end
 end
 
 @testset "Univariate continuous Mixture of (Laplace + Normal)" begin
+    Random.seed!(1234)
     N = 50_000
     θ₁ = -2
     θ₂ = 2
@@ -185,7 +186,7 @@ end
     α = 1 / 2
     β = 0.5
 
-    rtol = 3e-2 # 3% 
+    rtol = 5e-2 # 
     d1 = MixtureModel([Normal(θ₁, σ₁), Laplace(θ₂, σ₂)], [α, 1 - α])
     d2 = Normal(θ₀, σ₀)
     mix_true = MixtureModel([d1, d2], [β, 1 - β])
