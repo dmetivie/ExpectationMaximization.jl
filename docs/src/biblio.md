@@ -16,7 +16,7 @@ In this package, thanks to Julia generic code spirit, one can just code the algo
 I know of the Python [`mixem`](https://github.com/sseemayer/mixem) package doing also using a generic algorithm implementation. However, the available distribution choice is very limited as the authors have to define each distribution (Top-Down approach).
 This package does not define distribution[^1], it simply uses the `Distribution` type and what is in `Distributions.jl`.
 
-In Julia, there is the [`GaussianMixtures.jl`](https://github.com/davidavdav/GaussianMixtures.jl) package that also does EM. It seems a little faster than my implementation when used with Gaussian mixtures (I'd like to understand what is creating this difference, though).
+In Julia, there is the [`GaussianMixtures.jl`](https://github.com/davidavdav/GaussianMixtures.jl) package that also does EM. It seems a little faster than my implementation when used with Gaussian mixtures (I'd like to understand what is creating this difference, though, maybe the in-place allocation while `fit_mle` creates copy).
 However, I am not sure if this is maintained anymore.
 
 Have a look at the [benchmark](@ref Benchmarks) section for some comparisons.
