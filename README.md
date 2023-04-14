@@ -4,7 +4,8 @@
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://dmetivie.github.io/ExpectationMaximization.jl/dev)
 
 This package provides a simple implementation of the Expectation Maximization (EM) algorithm used to fit mixture models.
-Due to [Julia](https://julialang.org/) amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) systems, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast[^1]!
+Due to [Julia](https://julialang.org/) amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) systems, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast! (Have a look at the [Benchmark section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/benchmarks/))
+
 In particular, it works on a lot of mixtures:
 
 - Mixture of Univariate continuous distributions
@@ -16,7 +17,7 @@ In particular, it works on a lot of mixtures:
 Note that [Distributions](https://juliastats.org/Distributions.jl/stable/) *currently* does not allow `MixtureModel` to both have discrete and continuous components (but what does that? Rain).
 
 Just define a [`mix::MixtureModel`](https://juliastats.org/Distributions.jl/stable/mixture/) and do `fit_mle(mix, y)` with your data `y` and that's it!
-**Have a look at the [examples](@ref Examples) section**.
+**Have a look at the [Examples](https://dmetivie.github.io/ExpectationMaximization.jl/dev/examples/#Examples) section**.
 
 To work, the only requirements are that the components of the mixture `dist ∈ dists = components(mix)` considered (custom or coming from an existing package)
 
