@@ -1,7 +1,7 @@
 name = "ExpectationMaximization"
 uuid = "e1fe09cc-5134-44c2-a941-50f4cd97986a"
 authors = ["David Métivier <david.metivier@inrae.fr> and contributors"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
@@ -15,7 +15,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 ArgCheck = "2"
 Distributions = "0.24, 0.25"
 LogExpFunctions = "0.3"
-StatsBase = "0.33"
+StatsBase = "0.33, 0.34"
 julia = "1"
 
 [extras]
