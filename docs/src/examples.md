@@ -150,8 +150,10 @@ mix_mle = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=fa
 ### MNIST dataset: Bernoulli Mixture
 
 A classical example in clustering (pattern recognition) is the MNIST handwritten digits' data sets.
-One of the simplest ways to address the problem is to fit a Bernoulli mixture with 10 components for the ten digits 0, 1, 2, ..., 9 (see [Pattern Recognition and Machine Learning by C. Bishop, Section 9.3.3.](https://d1wqtxts1xzle7.cloudfront.net/30428242/bg0137-libre.pdf?1390888009=&response-content-disposition=inline%3B+filename%3DPattern_recognition_and_machine_learning.pdf&Expires=1679414339&Signature=fEpdcg3ZXYvfcSTtQBe6pF2UqhlrEV2hG0~djNJrglRKQRmt3iYE1OmgoEO0byuCs5HNRLFXKqKNs7l5ry-1pLTzMU87W8QqU8zn0STVozwWL-T2Yd-dmEjw-f8bbrvoq5WOzcUfj25MxLCfJRx66Q~zJwNDJYYnFeAyYFJdWnfPBf3GsR7nR6GYCQH~qvLfzGh~zOYHa7Gmr3yvz9mkjWFWMM4pAikNTmmw6F~N1rqXra2ZIL4kQqvfG-WjU-j0G5TdItSYn2FfoLcXPHXvA1nLfTB2vY5sGY8YKgFqez-~eQKt72diTZZnKNBJKnnnbZ0iWJzuTqzsqi2C4hVpLQ__&Key-Pair-Id=APKAJLOHF5GGSLRBV4ZA) for more context).
+One of the simplest[^1] ways to address the problem is to fit a Bernoulli mixture with 10 components for the ten digits 0, 1, 2, ..., 9 (see [Pattern Recognition and Machine Learning by C. Bishop, Section 9.3.3.](https://d1wqtxts1xzle7.cloudfront.net/30428242/bg0137-libre.pdf?1390888009=&response-content-disposition=inline%3B+filename%3DPattern_recognition_and_machine_learning.pdf&Expires=1679414339&Signature=fEpdcg3ZXYvfcSTtQBe6pF2UqhlrEV2hG0~djNJrglRKQRmt3iYE1OmgoEO0byuCs5HNRLFXKqKNs7l5ry-1pLTzMU87W8QqU8zn0STVozwWL-T2Yd-dmEjw-f8bbrvoq5WOzcUfj25MxLCfJRx66Q~zJwNDJYYnFeAyYFJdWnfPBf3GsR7nR6GYCQH~qvLfzGh~zOYHa7Gmr3yvz9mkjWFWMM4pAikNTmmw6F~N1rqXra2ZIL4kQqvfG-WjU-j0G5TdItSYn2FfoLcXPHXvA1nLfTB2vY5sGY8YKgFqez-~eQKt72diTZZnKNBJKnnnbZ0iWJzuTqzsqi2C4hVpLQ__&Key-Pair-Id=APKAJLOHF5GGSLRBV4ZA) for more context).
 Each of the components is a product distribution of $28\times 28$ independent Bernoulli. This simple (but rather big) model can be fitted via the EM algorithm.
+
+[^1]: I am not sure if this was historically one of the first way to approach this problem. Anyway this is more like an academic application rather than a good method to solve the MNIST problem.
 
 ```julia
 using MLDatasets: MNIST
