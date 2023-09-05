@@ -41,7 +41,7 @@ function fit_mle!(
     LL = zeros(N, K)
     γ = similar(LL)
     c = zeros(N)
-
+    ẑ = zeros(Int, N)
     # E-step
     E_step!(LL, c, γ, dists, α, y; robust = robust)
 
@@ -51,7 +51,7 @@ function fit_mle!(
 
     for it = 1:maxiter
         # S-step
-        ẑ = [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
+        ẑ[:] .= [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
         cat = [findall(ẑ .== k) for k = 1:K]
         
         # M-step
