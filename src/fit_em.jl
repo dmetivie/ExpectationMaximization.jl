@@ -6,7 +6,7 @@ The `mix` input is a mixture that is used to initilize the EM algorithm.
 - `method` determines the algorithm used.
 - `infos = true` returns a `Dict` with informations on the algorithm (converged, iteration number, loglikelihood).
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
-- `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops. 
+- `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops.
 - `display` value can be `:none`, `:iter`, `:final` to display Loglikelihood evolution at each iterations `:iter` or just the final one `:final`
 """
 function fit_mle(
@@ -17,6 +17,7 @@ function fit_mle(
     display = :none,
     maxiter = 1000,
     atol = 1e-3,
+    rtol = nothing,
     robust = false,
     infos = false,
 )
@@ -35,6 +36,7 @@ function fit_mle(
             display = display,
             maxiter = maxiter,
             atol = atol,
+            rtol = rtol,
             robust = robust,
         )
     else
@@ -47,6 +49,7 @@ function fit_mle(
             display = display,
             maxiter = maxiter,
             atol = atol,
+            rtol = rtol,
             robust = robust,
         )
     end
@@ -58,7 +61,7 @@ end
     fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 
 Do the same as `fit_mle` for each (initial) mixtures in the mix array. Then it selects the one with the largest loglikelihood.
-Warning: It uses try and catch to avoid errors messages in case EM converges toward a singular solution (probably using robust should be enough in most case to avoid errors). 
+Warning: It uses try and catch to avoid errors messages in case EM converges toward a singular solution (probably using robust should be enough in most case to avoid errors).
 """
 function fit_mle(
     mix::AbstractArray{<:MixtureModel},
@@ -148,7 +151,7 @@ function E_step!(
     γ[:, :] = exp.(LL .- c)
 end
 
-# Utilities 
+# Utilities
 
 size_sample(y::AbstractMatrix) = size(y, 2)
 size_sample(y::AbstractVector) = length(y)
