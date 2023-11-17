@@ -1,5 +1,5 @@
 """
-    Base.@kwdef struct StochasticEM<:AbstractEM 
+    Base.@kwdef struct StochasticEM<:AbstractEM
         rng::AbstractRNG = Random.GLOBAL_RNG
     end
 The Stochastic EM algorithm was introduced by G. Celeux, and J. Diebolt. in 1985 in [*The SEM Algorithm: A probabilistic teacher algorithm derived from the EM algorithm for the mixture problem*](https://cir.nii.ac.jp/crid/1574231874553755008).
@@ -16,7 +16,8 @@ end
     fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, method::StochasticEM; display=:none, maxiter=1000, atol=1e-3, robust=false)
 Use the stochastic EM algorithm to update the Distribution `dists` and weights `α` composing a mixture distribution.
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
-- `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops. 
+- `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops.
+- `rtol` relative tolerance for convergence, `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<rtol*(|ℓ⁽ⁱ⁺¹⁾| + |ℓ⁽ⁱ⁾|)/2` (does not check if `rtol` is `nothing`)
 - `display` value can be `:none`, `:iter`, `:final` to display Loglikelihood evolution at each iterations `:iter` or just the final one `:final`
 """
 function fit_mle!(
@@ -27,6 +28,7 @@ function fit_mle!(
     display = :none,
     maxiter = 1000,
     atol = 1e-3,
+    rtol = nothing,
     robust = false,
 )
 
@@ -53,7 +55,7 @@ function fit_mle!(
         # S-step
         ẑ[:] .= [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
         cat = [findall(ẑ .== k) for k = 1:K]
-        
+
         # M-step
         # using ẑ, maximize (update) the parameters
         α[:] = length.(cat)/N
@@ -70,7 +72,7 @@ function fit_mle!(
         push!(history["logtots"], logtotp)
         history["iterations"] += 1
 
-        if abs(logtotp - logtot) < atol
+        if abs(logtotp - logtot) < atol || (rtol !== nothing && abs(logtotp - logtot) < rtol * (abs(logtot) + abs(logtotp)) / 2)
             (display in [:iter, :final]) &&
                 println("EM converged in ", it, " iterations, final loglikelihood = ", logtotp)
             history["converged"] = true
@@ -100,6 +102,7 @@ function fit_mle!(
     display = :none,
     maxiter = 1000,
     atol = 1e-3,
+    rtol = nothing,
     robust = false,
 )
 
@@ -126,7 +129,7 @@ function fit_mle!(
         # S-step
         ẑ = [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
         cat = [findall(ẑ .== k) for k = 1:K]
-        
+
         # M-step
         # using ẑ, maximize (update) the parameters
         α[:] = length.(cat)/N
@@ -143,7 +146,7 @@ function fit_mle!(
         push!(history["logtots"], logtotp)
         history["iterations"] += 1
 
-        if abs(logtotp - logtot) < atol
+        if abs(logtotp - logtot) < atol || (rtol !== nothing && abs(logtotp - logtot) < rtol * (abs(logtot) + abs(logtotp)) / 2)
             (display in [:iter, :final]) &&
                 println("EM converged in ", it, " iterations, final loglikelihood = ", logtotp)
             history["converged"] = true
@@ -174,6 +177,7 @@ function fit_mle!(
     display = :none,
     maxiter = 1000,
     atol = 1e-3,
+    rtol = nothing,
     robust = false,
 )
 
@@ -200,7 +204,7 @@ function fit_mle!(
         # S-step
         ẑ = [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
         cat = [findall(ẑ .== k) for k = 1:K]
-        
+
         # M-step
         # using ẑ, maximize (update) the parameters
         α[:] = [length(cat[k])*sum(w[cat[k]]) for k in 1:K]/sum(w)
@@ -217,7 +221,7 @@ function fit_mle!(
         push!(history["logtots"], logtotp)
         history["iterations"] += 1
 
-        if abs(logtotp - logtot) < atol
+        if abs(logtotp - logtot) < atol || (rtol !== nothing && abs(logtotp - logtot) < rtol * (abs(logtot) + abs(logtotp)) / 2)
             (display in [:iter, :final]) &&
                 println("EM converged in ", it, " iterations, final loglikelihood = ", logtotp)
             history["converged"] = true
@@ -248,6 +252,7 @@ function fit_mle!(
     display = :none,
     maxiter = 1000,
     atol = 1e-3,
+    rtol = nothing,
     robust = false,
 )
 
@@ -274,7 +279,7 @@ function fit_mle!(
         # S-step
         ẑ = [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
         cat = [findall(ẑ .== k) for k = 1:K]
-        
+
         # M-step
         # using ẑ, maximize (update) the parameters
         α[:] = [sum(w[cat[k]]) for k in 1:K]/sum(w)
@@ -291,7 +296,7 @@ function fit_mle!(
         push!(history["logtots"], logtotp)
         history["iterations"] += 1
 
-        if abs(logtotp - logtot) < atol
+        if abs(logtotp - logtot) < atol || (rtol !== nothing && abs(logtotp - logtot) < rtol * (abs(logtot) + abs(logtotp)) / 2)
             (display in [:iter, :final]) &&
                 println("EM converged in ", it, " iterations, final loglikelihood = ", logtotp)
             history["converged"] = true

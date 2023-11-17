@@ -23,6 +23,15 @@ using Random
     @test isapprox(θ₁, p[1]...; rtol = rtol)
     @test isapprox(α, p[2][1]; rtol = rtol)
     @test isapprox(θ₂, p[2][2]; rtol = rtol)
+
+    # Test rtol
+    mix_mle2 =
+        fit_mle(mix_guess, y; display = :none, rtol = 1e-8, atol = 0, robust = false, infos = false)
+    p = params(mix_mle2)[1]
+    @test isapprox([β, 1 - β], probs(mix_mle2); rtol = rtol)
+    @test isapprox(θ₁, p[1]...; rtol = rtol)
+    @test isapprox(α, p[2][1]; rtol = rtol)
+    @test isapprox(θ₂, p[2][2]; rtol = rtol)
 end
 
 @testset "Stochastic EM Univariate continuous Mixture Exponential + Laplace" begin
@@ -49,6 +58,23 @@ end
 
     p = params(mix_mle)[1]
     @test isapprox([β, 1 - β], probs(mix_mle); rtol = rtol)
+    @test isapprox(θ₁, p[1][2]; rtol = rtol)
+    @test isapprox(μ, p[1][1]; rtol = rtol)
+    @test isapprox(α, p[2][1]; rtol = rtol)
+    @test isapprox(θ₂, p[2][2]; rtol = rtol)
+
+    mix_mle2 = fit_mle(
+        mix_guess,
+        y;
+        display = :none,
+        atol = 0,
+        rtol = 1e-6,
+        robust = false,
+        infos = false,
+        method = StochasticEM(),
+    )
+    p = params(mix_mle2)[1]
+    @test isapprox([β, 1 - β], probs(mix_mle2); rtol = rtol)
     @test isapprox(θ₁, p[1][2]; rtol = rtol)
     @test isapprox(μ, p[1][1]; rtol = rtol)
     @test isapprox(α, p[2][1]; rtol = rtol)
@@ -143,7 +169,7 @@ end
     α = 1 / 2
     β = 0.3
 
-    rtol = 5e-2 #  
+    rtol = 5e-2 #
     d1 = MixtureModel([Normal(θ₁, σ₁), Normal(θ₂, σ₂)], [α, 1 - α])
     d2 = Normal(θ₀, σ₀)
     mix_true = MixtureModel([d1, d2], [β, 1 - β])
@@ -186,7 +212,7 @@ end
     α = 1 / 2
     β = 0.5
 
-    rtol = 5e-2 # 
+    rtol = 5e-2 #
     d1 = MixtureModel([Normal(θ₁, σ₁), Laplace(θ₂, σ₂)], [α, 1 - α])
     d2 = Normal(θ₀, σ₀)
     mix_true = MixtureModel([d1, d2], [β, 1 - β])
