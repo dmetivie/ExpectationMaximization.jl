@@ -124,7 +124,15 @@ function E_step!(
 ) where {T<:AbstractFloat}
     # evaluate likelihood for each type k
     for k in eachindex(dists)
-        LL[:, k] .= log(α[k]) .+ logpdf.(dists[k], y)
+        logα = log(α[k])
+        robust && !isfinite(logα) && continue
+        distk = dists[k]
+        for n in eachindex(y)
+            logp = logpdf(distk, y[n])
+            if !robust || isfinite(logp)
+                LL[n, k] = logα + logp
+            end
+        end
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
@@ -143,12 +151,16 @@ function E_step!(
 )
     # evaluate likelihood for each type k
     for k in eachindex(dists)
-        LL[:, k] .= log(α[k])
+        logα = log(α[k])
+        robust && !isfinite(logα) && continue
+        distk = dists[k]
         for n in axes(y, 2)
-            LL[n, k] += logpdf(dists[k], y[:, n])
+            logp = logpdf(distk, y[:, n])
+            if !robust || isfinite(logp)
+                LL[n, k] = logα + logp
+            end
         end
     end
-    robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
     c[:] = logsumexp(LL, dims = 2)
     γ[:, :] = exp.(LL .- c)
