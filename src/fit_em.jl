@@ -124,13 +124,17 @@ function E_step!(
 ) where {T<:AbstractFloat}
     # evaluate likelihood for each type k
     for k in eachindex(dists)
-        logα = log(α[k])
-        robust && !isfinite(logα) && continue
-        distk = dists[k]
-        for n in eachindex(y)
-            logp = logpdf(distk, y[n])
-            if !robust || isfinite(logp)
+        logα, distk = log(α[k]), dists[k]
+        if robust
+            isfinite(logα) || continue
+            for n in eachindex(y)
+                logp = logpdf(distk, y[n])
+                isfinite(logp) || continue
                 LL[n, k] = logα + logp
+            end
+        else
+            for n in eachindex(y)
+                LL[n, k] = logα + logpdf(distk, y[n])
             end
         end
     end
@@ -151,13 +155,17 @@ function E_step!(
 )
     # evaluate likelihood for each type k
     for k in eachindex(dists)
-        logα = log(α[k])
-        robust && !isfinite(logα) && continue
-        distk = dists[k]
-        for n in axes(y, 2)
-            logp = logpdf(distk, y[:, n])
-            if !robust || isfinite(logp)
+        logα, distk = log(α[k]), dists[k]
+        if robust
+            isfinite(logα) || continue
+            for n in axes(y, 2)
+                logp = logpdf(distk, y[:, n])
+                isfinite(logp) || continue
                 LL[n, k] = logα + logp
+            end
+        else
+            for n in axes(y, 2)
+                LL[n, k] = logα + logpdf(distk, y[:, n])
             end
         end
     end
