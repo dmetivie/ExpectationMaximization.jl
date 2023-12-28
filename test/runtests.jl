@@ -16,22 +16,22 @@ using Random
     y = rand(mix_true, N)
     mix_guess = MixtureModel([Exponential(1), Gamma(0.5, 1)], [0.5, 1 - 0.5])
     mix_mle =
-        fit_mle(mix_guess, y; display = :none, atol = 1e-3, robust = false, infos = false)
+        fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
 
     p = params(mix_mle)[1]
-    @test isapprox([β, 1 - β], probs(mix_mle); rtol = rtol)
-    @test isapprox(θ₁, p[1]...; rtol = rtol)
-    @test isapprox(α, p[2][1]; rtol = rtol)
-    @test isapprox(θ₂, p[2][2]; rtol = rtol)
+    @test isapprox([β, 1 - β], probs(mix_mle); rtol=rtol)
+    @test isapprox(θ₁, p[1]...; rtol=rtol)
+    @test isapprox(α, p[2][1]; rtol=rtol)
+    @test isapprox(θ₂, p[2][2]; rtol=rtol)
 
     # Test rtol
     mix_mle2 =
-        fit_mle(mix_guess, y; display = :none, rtol = 1e-8, atol = 0, robust = false, infos = false)
+        fit_mle(mix_guess, y; display=:none, rtol=1e-8, atol=0, robust=false, infos=false)
     p = params(mix_mle2)[1]
-    @test isapprox([β, 1 - β], probs(mix_mle2); rtol = rtol)
-    @test isapprox(θ₁, p[1]...; rtol = rtol)
-    @test isapprox(α, p[2][1]; rtol = rtol)
-    @test isapprox(θ₂, p[2][2]; rtol = rtol)
+    @test isapprox([β, 1 - β], probs(mix_mle2); rtol=rtol)
+    @test isapprox(θ₁, p[1]...; rtol=rtol)
+    @test isapprox(α, p[2][1]; rtol=rtol)
+    @test isapprox(θ₂, p[2][2]; rtol=rtol)
 end
 
 @testset "Stochastic EM Univariate continuous Mixture Exponential + Laplace" begin
@@ -49,36 +49,36 @@ end
     mix_mle = fit_mle(
         mix_guess,
         y;
-        display = :none,
-        atol = 1e-3,
-        robust = false,
-        infos = false,
-        method = StochasticEM(),
+        display=:none,
+        atol=1e-3,
+        robust=false,
+        infos=false,
+        method=StochasticEM(),
     )
 
     p = params(mix_mle)[1]
-    @test isapprox([β, 1 - β], probs(mix_mle); rtol = rtol)
-    @test isapprox(θ₁, p[1][2]; rtol = rtol)
-    @test isapprox(μ, p[1][1]; rtol = rtol)
-    @test isapprox(α, p[2][1]; rtol = rtol)
-    @test isapprox(θ₂, p[2][2]; rtol = rtol)
+    @test isapprox([β, 1 - β], probs(mix_mle); rtol=rtol)
+    @test isapprox(θ₁, p[1][2]; rtol=rtol)
+    @test isapprox(μ, p[1][1]; rtol=rtol)
+    @test isapprox(α, p[2][1]; rtol=rtol)
+    @test isapprox(θ₂, p[2][2]; rtol=rtol)
 
     mix_mle2 = fit_mle(
         mix_guess,
         y;
-        display = :none,
-        atol = 0,
-        rtol = 1e-6,
-        robust = false,
-        infos = false,
-        method = StochasticEM(),
+        display=:none,
+        atol=0,
+        rtol=1e-6,
+        robust=false,
+        infos=false,
+        method=StochasticEM(),
     )
     p = params(mix_mle2)[1]
-    @test isapprox([β, 1 - β], probs(mix_mle2); rtol = rtol)
-    @test isapprox(θ₁, p[1][2]; rtol = rtol)
-    @test isapprox(μ, p[1][1]; rtol = rtol)
-    @test isapprox(α, p[2][1]; rtol = rtol)
-    @test isapprox(θ₂, p[2][2]; rtol = rtol)
+    @test isapprox([β, 1 - β], probs(mix_mle2); rtol=rtol)
+    @test isapprox(θ₁, p[1][2]; rtol=rtol)
+    @test isapprox(μ, p[1][1]; rtol=rtol)
+    @test isapprox(α, p[2][1]; rtol=rtol)
+    @test isapprox(θ₂, p[2][2]; rtol=rtol)
 end
 
 @testset "Multivariate Gaussian Mixture" begin
@@ -111,12 +111,12 @@ end
 
     # Fit MLE
     mix_mle =
-        fit_mle(mix_guess, y; display = :none, atol = 1e-3, robust = false, infos = false)
+        fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
 
     p = params(mix_mle)[1]
-    @test isapprox([β, 1 - β], probs(mix_mle); rtol = rtol)
-    @test isapprox(collect(p[1]), [θ₁, Σ₁], rtol = rtol)
-    @test isapprox(collect(p[2]), [θ₂, Σ₂], rtol = rtol)
+    @test isapprox([β, 1 - β], probs(mix_mle); rtol=rtol)
+    @test isapprox(collect(p[1]), [θ₁, Σ₁], rtol=rtol)
+    @test isapprox(collect(p[2]), [θ₂, Σ₂], rtol=rtol)
 end
 
 # Bernoulli Mixture i.e. Mixture of Bernoulli Product (S = 10 term and K = 3 mixture components).
@@ -149,11 +149,11 @@ end
 
     # Fit MLE
     mix_mle =
-        fit_mle(mix_guess, y; display = :none, atol = 1e-3, robust = false, infos = false)
+        fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
 
     p = params(mix_mle)[1]
-    @test isapprox([β / 2, 1 - β, β / 2], probs(mix_mle); rtol = rtol)
-    @test isapprox(first.(hcat(p...)), θ, rtol = rtol)
+    @test isapprox([β / 2, 1 - β, β / 2], probs(mix_mle); rtol=rtol)
+    @test isapprox(first.(hcat(p...)), θ, rtol=rtol)
 end
 
 @testset "Univariate continuous Mixture of (mixture + Normal)" begin
@@ -185,7 +185,7 @@ end
 
     mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
     mix_mle =
-        fit_mle(mix_guess, y; display = :none, atol = 1e-3, robust = false, infos = false)
+        fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
     y_guess = rand(mix_mle, N)
 
     @test probs(mix_mle) ≈ [β, 1 - β] rtol = rtol
@@ -228,7 +228,7 @@ end
 
     mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
     mix_mle =
-        fit_mle(mix_guess, y; display = :none, atol = 1e-3, robust = false, infos = false)
+        fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
     # without print
     # 1.368 s (17002715 allocations: 1.48 GiB)
     #  1.485 s (17853393 allocations: 1.61 GiB)

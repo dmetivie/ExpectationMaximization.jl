@@ -24,8 +24,6 @@ You can find the benchmark code in [here](https://github.com/dmetivie/Expectatio
 
 ![timing_K_2_rudimentary_wo_memory_leak](https://user-images.githubusercontent.com/46794064/227195619-c75b9276-932b-4029-8b49-6cce919acc87.svg)
 
-<!-- I guess that to increase performance in this package, it would be nice to be able to do in place `fit_mle` for large multidimensional cases. -->
-
 [^1]: Note that `@btime` with `RCall` and `PyCall` might produce a small-time overhead compare to the true R/Python time see [here for example](https://discourse.julialang.org/t/benchmarking-julia-vs-python-vs-r-with-pycall-and-rcall/37308).
 I did compare with `R` `microbenchmark` and Python `timeit` and it produces very similar timing but in my experience `BenchmarkTools` is smarter and simpler to use, i.e. it will figure out alone the number of repetition to do in function of the run.
 
