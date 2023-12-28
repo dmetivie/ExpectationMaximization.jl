@@ -1,4 +1,3 @@
-
 # [Instance vs Type version](@id InstanceVType)
 
 This package relies heavily on the types and methods defined in `Distributions.jl` e.g., `fit_mle` and `logpdf`.

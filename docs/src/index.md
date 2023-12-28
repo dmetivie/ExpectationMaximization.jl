@@ -1,8 +1,10 @@
-
 # ExpectationMaximization.jl
 
 This package provides a simple implementation of the Expectation Maximization (EM) algorithm used to fit mixture models.
 Due to [Julia](https://julialang.org/) amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) systems, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast[^1]!
+
+## What type of mixtures?
+
 In particular, it works on a lot of mixtures:
 
 - Mixture of Univariate continuous distributions
@@ -11,7 +13,7 @@ In particular, it works on a lot of mixtures:
 - Mixture of mixtures (univariate or multivariate and continuous or discrete)
 - More?
 
-Note that [Distributions](https://juliastats.org/Distributions.jl/stable/) *currently* does not allow `MixtureModel` to both have discrete and continuous components (but what does that? Rain).
+## How?
 
 Just define a [`mix::MixtureModel`](https://juliastats.org/Distributions.jl/stable/mixture/) and do `fit_mle(mix, y)` with your data `y` and that's it!
 **Have a look at the [examples](@ref Examples) section**.
@@ -27,7 +29,11 @@ In case 2. is not explicit known, you can always implement a numerical scheme, i
 Or, when possible, represent your “difficult” distribution as a mixture of simple terms.
 (I had [this](https://stats.stackexchange.com/questions/63647/estimating-parameters-of-students-t-distribution) in mind, but it is not directly a mixture model.)
 
+!!! note
+    [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) *currently* does not allow `MixtureModel` to both have discrete and continuous components[^2].
+
 [^1]: Have a look at the [Benchmark section](@ref Benchmarks).
+[^2]: Rain is a good example of mixture having both a discrete (`Delta` distribution in `0`) and continuous (`Exponential`, `Gamma`, ...) component.
 
 ## Algorithms
 

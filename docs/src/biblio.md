@@ -1,4 +1,3 @@
-
 # Bibliography
 
 ## Theory
