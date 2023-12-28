@@ -260,3 +260,28 @@ end
     ẑ = predict(m, y)
     @test count(ẑ .== z) / N > 0.85
 end
+
+@testset "Test robustness against dropout issue" begin
+    # See https://github.com/dmetivie/ExpectationMaximization.jl/issues/11 
+    # In this example, one of the mixture weight goes to zero outputing at iteration 3 an
+    # ERROR: PosDefException: matrix is not Hermitian; Cholesky factorization failed.
+    Random.seed!(1234)
+
+    N = 600
+    
+    ctrue = [[-0.3, 1],
+            [-0.4, 0.7],
+            [0.4, -0.6]]
+    X = reduce(hcat, [randn(length(c), N÷3) .+ c for c in ctrue])
+    mix_bad_guess = MixtureModel([MvNormal([1.6, -2.4], [100 0.0; 0.0 1]), MvNormal([-1.1, -0.6], 0.01), MvNormal([0.4, 2.4], 1)])
+    
+    fit_mle(mix_bad_guess, X, maxiter = 1)
+    
+    try # make sure our test case is problematic after two iterations without robust option
+        fit_mle(mix_bad_guess, X, maxiter = 2) #triggers error
+    catch e
+        @test true
+    end
+    # no error thrown (however the EM did converged to some bad local maxima)
+    mix_mle_bad = fit_mle(mix_bad_guess, X, maxiter = 2000, robust = true)
+end
