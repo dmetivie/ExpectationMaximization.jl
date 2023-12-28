@@ -21,7 +21,7 @@ You can find the benchmark code [here](https://github.com/dmetivie/ExpectationMa
 
 **Conclusion: for Gaussian mixtures, `ExpectationMaximization.jl` is about 2 to 10 times faster than Python or R implementations** and about as fast as the specialized Julia package `GaussianMixturesModel.jl`.
 
-![timing_K_2_rudimentary_wo_memory_leak](https://user-images.githubusercontent.com/46794064/227195619-c75b9276-932b-4029-8b49-6cce919acc87.svg)
+![timing_K_2](https://github.com/dmetivie/ExpectationMaximization.jl/assets/46794064/57bd5671-1082-4514-9a9e-c611f9c923df)
 
 [^1]: Note that `@btime` with `RCall` and `PyCall` might produce a small-time overhead compared to the pure R/Python time; see [here for example](https://discourse.julialang.org/t/benchmarking-julia-vs-python-vs-r-with-pycall-and-rcall/37308).
 I did compare with `R` `microbenchmark` and Python `timeit` and they produced very similar timing but in my experience `BenchmarkTools.jl` is smarter and simpler to use, i.e. it will figure out alone the number of repetition to do in function of the run.
