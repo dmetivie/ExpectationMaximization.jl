@@ -59,8 +59,13 @@ function fit_mle!(
         # M-step
         # using ẑ, maximize (update) the parameters
         α[:] = length.(cat)/N
-        dists[:] = [fit_mle(dists[k], y[cat[k]]) for k = 1:K]
-
+        dists[:] = map(1:K) do k 
+                    if α[k] > 0
+                        fit_mle(dists[k], y[cat[k]])
+                    else
+                        dists[k]
+                    end
+                 end
         # E-step
         # evaluate likelihood for each type k
         E_step!(LL, c, γ, dists, α, y; robust = robust)
@@ -133,7 +138,13 @@ function fit_mle!(
         # M-step
         # using ẑ, maximize (update) the parameters
         α[:] = length.(cat)/N
-        dists[:] = [fit_mle(dists[k], y[:, cat[k]]) for k = 1:K]
+        dists[:] = map(1:K) do k 
+            if α[k] > 0
+                fit_mle(dists[k], y[:, cat[k]])
+            else
+                dists[k]
+            end
+         end
 
         # E-step
         # evaluate likelihood for each type k

@@ -278,10 +278,19 @@ end
     fit_mle(mix_bad_guess, X, maxiter = 1)
     
     try # make sure our test case is problematic after two iterations without robust option
-        fit_mle(mix_bad_guess, X, maxiter = 2) #triggers error
+        fit_mle(mix_bad_guess, X, maxiter = 20) #triggers error
+        @test false
     catch e
         @test true
     end
-    # no error thrown (however the EM did converged to some bad local maxima)
-    mix_mle_bad = fit_mle(mix_bad_guess, X, maxiter = 2000, robust = true)
+    begin 
+        #! no error thrown, however the EM converges to some bad local maxima!
+        mix_mle_bad = fit_mle(mix_bad_guess, X, maxiter = 2000, robust = true)
+        @test true
+    end
+    begin 
+        #! no error thrown, however the SEM has one mixture component with zero proba (remaining the same at every iteration)
+        mix_mle_S = fit_mle(mix_bad_guess, X, method = StochasticEM(), maxiter = 2000)
+        @test true
+    end
 end
