@@ -14,13 +14,13 @@ function fit_mle(
     mix::MixtureModel,
     y::AbstractVecOrMat,
     weights...;
-    method = ClassicEM(),
-    display = :none,
-    maxiter = 1000,
-    atol = 1e-3,
-    rtol = nothing,
-    robust = false,
-    infos = false,
+    method=ClassicEM(),
+    display=:none,
+    maxiter=1000,
+    atol=1e-3,
+    rtol=nothing,
+    robust=false,
+    infos=false,
 )
 
     # Initial parameters
@@ -34,11 +34,11 @@ function fit_mle(
             dists,
             y,
             method;
-            display = display,
-            maxiter = maxiter,
-            atol = atol,
-            rtol = rtol,
-            robust = robust,
+            display=display,
+            maxiter=maxiter,
+            atol=atol,
+            rtol=rtol,
+            robust=robust,
         )
     else
         history = fit_mle!(
@@ -47,11 +47,11 @@ function fit_mle(
             y,
             weights...,
             method;
-            display = display,
-            maxiter = maxiter,
-            atol = atol,
-            rtol = rtol,
-            robust = robust,
+            display=display,
+            maxiter=maxiter,
+            atol=atol,
+            rtol=rtol,
+            robust=robust,
         )
     end
 
@@ -68,25 +68,25 @@ function fit_mle(
     mix::AbstractArray{<:MixtureModel},
     y::AbstractVecOrMat,
     weights...;
-    method = ClassicEM(),
-    display = :none,
-    maxiter = 1000,
-    atol = 1e-3,
-    rtol = nothing,
-    robust = false,
-    infos = false,
+    method=ClassicEM(),
+    display=:none,
+    maxiter=1000,
+    atol=1e-3,
+    rtol=nothing,
+    robust=false,
+    infos=false,
 )
 
     mx_max, history_max = fit_mle(
         mix[1],
         y,
         weights...;
-        method = method,
-        display = display,
-        maxiter = maxiter,
-        atol = atol,
-        robust = robust,
-        infos = true,
+        method=method,
+        display=display,
+        maxiter=maxiter,
+        atol=atol,
+        robust=robust,
+        infos=true,
     )
     for j in eachindex(mix)[2:end]
         try
@@ -94,13 +94,13 @@ function fit_mle(
                 mix[j],
                 y,
                 weights...;
-                method = method,
-                display = display,
-                maxiter = maxiter,
-                atol = atol,
-                rtol = rtol,
-                robust = robust,
-                infos = true,
+                method=method,
+                display=display,
+                maxiter=maxiter,
+                atol=atol,
+                rtol=rtol,
+                robust=robust,
+                infos=true,
             )
             if history_max["logtots"][end] < history_new["logtots"][end]
                 mx_max = mx_new
@@ -122,7 +122,7 @@ function E_step!(
     dists::AbstractVector{F} where {F<:Distribution},
     α::AbstractVector,
     y::AbstractVector{<:Real};
-    robust = false,
+    robust=false,
 ) where {T<:AbstractFloat}
     # evaluate likelihood for each type k
     for k in eachindex(dists)
@@ -141,7 +141,7 @@ function E_step!(
     dists::AbstractVector{F} where {F<:Distribution},
     α::AbstractVector,
     y::AbstractMatrix;
-    robust = false,
+    robust=false,
 )
     # evaluate likelihood for each type k
     @views for k in eachindex(dists)

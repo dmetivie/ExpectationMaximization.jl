@@ -23,11 +23,11 @@ function fit_mle!(
     dists::AbstractVector{F} where {F<:Distribution},
     y::AbstractVecOrMat,
     method::StochasticEM;
-    display = :none,
-    maxiter = 1000,
-    atol = 1e-3,
-    rtol = nothing,
-    robust = false,
+    display=:none,
+    maxiter=1000,
+    atol=1e-3,
+    rtol=nothing,
+    robust=false,
 )
 
     @argcheck display in [:none, :iter, :final]
@@ -43,7 +43,7 @@ function fit_mle!(
     c = zeros(N)
     ẑ = zeros(Int, N)
     # E-step
-    E_step!(LL, c, γ, dists, α, y; robust = robust)
+    E_step!(LL, c, γ, dists, α, y; robust=robust)
 
     # Loglikelihood
     logtot = sum(c)
@@ -59,7 +59,7 @@ function fit_mle!(
 
         # E-step
         # evaluate likelihood for each type k
-        E_step!(LL, c, γ, dists, α, y; robust = robust)
+        E_step!(LL, c, γ, dists, α, y; robust=robust)
 
         # Loglikelihood
         logtotp = sum(c)
@@ -95,22 +95,22 @@ For the `StochasticEM` the `cat` drawn at S-step for each observation in `y` is 
 """
 function M_step!(α, dists, y::AbstractVector, cat, method::StochasticEM)
     # 
-    α[:] = length.(cat)/size_sample(y)
+    α[:] = length.(cat) / size_sample(y)
     dists[:] = [fit_mle(dists[k], y[cₖ]) for (k, cₖ) in enumerate(cat)]
 end
 
 function M_step!(α, dists, y::AbstractMatrix, cat, method::StochasticEM)
-    α[:] = length.(cat)/size_sample(y)
+    α[:] = length.(cat) / size_sample(y)
     dists[:] = [fit_mle(dists[k], y[:, cₖ]) for (k, cₖ) in enumerate(cat)]
 end
 
 function M_step!(α, dists, y::AbstractVector, cat, w, method::StochasticEM)
-    α[:] = [sum(w[cₖ]) for cₖ in cat]/sum(w)
+    α[:] = [sum(w[cₖ]) for cₖ in cat] / sum(w)
     dists[:] = [fit_mle(dists[k], y[cₖ], w[cₖ]) for (k, cₖ) in enumerate(cat)]
 end
 
 function M_step!(α, dists, y::AbstractMatrix, cat, w, method::StochasticEM)
-    α[:] = [sum(w[cat[k]]) for k in 1:K]/sum(w)
+    α[:] = [sum(w[cat[k]]) for k in 1:K] / sum(w)
     dists[:] = [fit_mle(dists[k], y[:, cₖ], w[cₖ]) for (k, cₖ) in enumerate(cat)]
 end
 
@@ -121,11 +121,11 @@ function fit_mle!(
     y::AbstractVecOrMat,
     w::AbstractVector,
     method::StochasticEM;
-    display = :none,
-    maxiter = 1000,
-    atol = 1e-3,
-    rtol = nothing,
-    robust = false,
+    display=:none,
+    maxiter=1000,
+    atol=1e-3,
+    rtol=nothing,
+    robust=false,
 )
 
     @argcheck display in [:none, :iter, :final]
@@ -141,7 +141,7 @@ function fit_mle!(
     c = zeros(N)
 
     # E-step
-    E_step!(LL, c, γ, dists, α, y; robust = robust)
+    E_step!(LL, c, γ, dists, α, y; robust=robust)
 
     # Loglikelihood
     logtot = sum(w[n] * c[n] for n = 1:N) #dot(w, c)
@@ -157,7 +157,7 @@ function fit_mle!(
 
         # E-step
         # evaluate likelihood for each type k
-        E_step!(LL, c, γ, dists, α, y; robust = robust)
+        E_step!(LL, c, γ, dists, α, y; robust=robust)
 
         # Loglikelihood
         logtotp = sum(w[n] * c[n] for n in eachindex(c)) #dot(w, c)

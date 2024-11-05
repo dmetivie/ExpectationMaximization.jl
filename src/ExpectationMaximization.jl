@@ -26,8 +26,8 @@ argmaxrow(M) = [argmax(r) for r in eachrow(M)]
 Evaluate the most likely category for each observations given a `MixtureModel`.
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 """
-function predict(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
-    return argmaxrow(predict_proba(mix, y; robust = robust))
+function predict(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
+    return argmaxrow(predict_proba(mix, y; robust=robust))
 end
 
 """
@@ -35,7 +35,7 @@ end
 Evaluate the probability for each observations to belong to a category given a `MixtureModel`..
 - `robust = true` will prevent the (log)likelihood to under(overflow)flow to `-∞` (or `∞`).
 """
-function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
+function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
     # evaluate likelihood for each components k
     dists = mix.components
     α = probs(mix)
@@ -44,7 +44,7 @@ function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
     LL = zeros(N, K)
     γ = similar(LL)
     c = zeros(N)
-    E_step!(LL, c, γ, dists, α, y; robust = robust)
+    E_step!(LL, c, γ, dists, α, y; robust=robust)
     return γ
 end
 

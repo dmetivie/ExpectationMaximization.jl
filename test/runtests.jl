@@ -198,8 +198,7 @@ end
     d2_guess = Normal(θ₀ + 0.1, σ₀ - 0.01)
 
     mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
-    mix_mle =
-        fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
+    mix_mle = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
     y_guess = rand(rng, mix_mle, N)
 
     @test probs(mix_mle) ≈ [β, 1 - β] rtol = rtol
@@ -261,9 +260,9 @@ end
     rng = StableRNG(123)
     N = 50_000
     θ₁ = 5
-    θ₂ = 1/2
+    θ₂ = 1 / 2
     σ₁ = 10
-    σ₂ = 1/5
+    σ₂ = 1 / 5
 
     α = 1 / 4
     β = 0.3
@@ -275,21 +274,21 @@ end
     y = rand(rng, mix_true, N)
 
     d1_guess = MixtureModel(
-        [Poisson(θ₁+2), Geometric(θ₂+0.2)],
+        [Poisson(θ₁ + 2), Geometric(θ₂ + 0.2)],
         [α + 0.15, 1 - α - 0.15],
     )
     d2_guess = MixtureModel(
-        [Poisson(σ₁+2), Geometric(σ₂+0.2)],
+        [Poisson(σ₁ + 2), Geometric(σ₂ + 0.2)],
         [α + 0.15, 1 - α - 0.15],
     )
 
     mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
-    
+
     for meth in [ClassicEM(), StochasticEM(rng)]
         mix_mle, hist =
-            fit_mle(mix_guess, y; display=:none, atol = 2e-4, robust=true, infos=true, method = meth, maxiter = 100_000)
-     
-        @test hist["converged"] 
+            fit_mle(mix_guess, y; display=:none, atol=2e-4, robust=true, infos=true, method=meth, maxiter=100_000)
+
+        @test hist["converged"]
         #note: atol seems more appropiate for [0,1] numbers
         @test probs(mix_mle)[1] ≈ β atol = rtol
         p = params(mix_mle)[1]
@@ -332,24 +331,24 @@ end
 
     prob_class = rand(rng, Dirichlet(ones(n_classes)))
 
-    dist_true = MixtureModel([product_distribution([Categorical(prob_jck[j][:,k]) for j in 1:n_items]) for k in 1:n_classes], prob_class)
+    dist_true = MixtureModel([product_distribution([Categorical(prob_jck[j][:, k]) for j in 1:n_items]) for k in 1:n_classes], prob_class)
     data_with_mix = rand(rng, dist_true, n_samples)
 
-    prob_jck_guess = [rand(rng, Dirichlet(ones(n_categoriesⱼ[j])), n_classes) for j in 1:n_items] 
-    prob_class_guess = prob_class + 0.02*(rand(rng, Dirichlet(ones(n_classes))) .- 1/n_classes) #
+    prob_jck_guess = [rand(rng, Dirichlet(ones(n_categoriesⱼ[j])), n_classes) for j in 1:n_items]
+    prob_class_guess = prob_class + 0.02 * (rand(rng, Dirichlet(ones(n_classes))) .- 1 / n_classes) #
 
-    dist_ini = MixtureModel([product_distribution([Categorical(prob_jck_guess[j][:,k]) for j in 1:n_items]) for k in 1:n_classes], prob_class_guess)
+    dist_ini = MixtureModel([product_distribution([Categorical(prob_jck_guess[j][:, k]) for j in 1:n_items]) for k in 1:n_classes], prob_class_guess)
 
     dist_fit = fit_mle(dist_ini, data_with_mix, atol=1e-5, maxiter=10000) # 
-    
+
     # with this seed indices of latent classes get inverted hence the reorder
-    kk = [1,3,2]
-    @test probs(dist_fit)[kk] ≈ probs(dist_true) rtol=1e2
+    kk = [1, 3, 2]
+    @test probs(dist_fit)[kk] ≈ probs(dist_true) rtol = 1e2
     for k in 1:n_classes
-        @test all(isapprox.(probs.(components(dist_fit)[kk[k]].v), probs.(components(dist_true)[k].v), atol = 10e-2))
+        @test all(isapprox.(probs.(components(dist_fit)[kk[k]].v), probs.(components(dist_true)[k].v), atol=10e-2))
     end
 
-    dist_fit = fit_mle(dist_ini, data_with_mix, atol=1e-3, maxiter=100, method = StochasticEM(rng)) # just to check it runs
+    dist_fit = fit_mle(dist_ini, data_with_mix, atol=1e-3, maxiter=100, method=StochasticEM(rng)) # just to check it runs
 end
 # @btime ExpectationMaximization.fit_mle(dist_ini, $(data_with_mix), atol=1e-3, maxiter=1000)
 # 1.159 s (33147640 allocations: 1.73 GiB) # before @views
