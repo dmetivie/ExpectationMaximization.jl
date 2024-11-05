@@ -113,6 +113,8 @@ function fit_mle(
     return infos ? (mx_max, history_max) : mx_max
 end
 
+# E-step methods
+
 function E_step!(
     LL::AbstractMatrix{T},
     c::AbstractVector{T},
@@ -142,7 +144,7 @@ function E_step!(
     robust = false,
 )
     # evaluate likelihood for each type k
-    for k in eachindex(dists)
+    @views for k in eachindex(dists)
         LL[:, k] .= log(α[k])
         for n in axes(y, 2)
             LL[n, k] += logpdf(dists[k], y[:, n])
@@ -150,40 +152,6 @@ function E_step!(
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
-    c[:] = logsumexp(LL, dims = 2)
+    logsumexp!(c, LL) # c[:] = logsumexp(LL, dims=2)
     γ[:, :] = exp.(LL .- c)
-end
-
-# Utilities
-
-size_sample(y::AbstractMatrix) = size(y, 2)
-size_sample(y::AbstractVector) = length(y)
-
-argmaxrow(M) = [argmax(r) for r in eachrow(M)]
-
-"""
-    predict(mix::MixtureModel, y::AbstractVector; robust=false)
-Evaluate the most likely category for each observations given a `MixtureModel`.
-- `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
-"""
-function predict(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
-    return argmaxrow(predict_proba(mix, y; robust = robust))
-end
-
-"""
-    predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
-Evaluate the probability for each observations to belong to a category given a `MixtureModel`..
-- `robust = true` will prevent the (log)likelihood to under(overflow)flow to `-∞` (or `∞`).
-"""
-function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
-    # evaluate likelihood for each components k
-    dists = mix.components
-    α = probs(mix)
-    K = length(dists)
-    N = size_sample(y)
-    LL = zeros(N, K)
-    γ = similar(LL)
-    c = zeros(N)
-    E_step!(LL, c, γ, dists, α, y; robust = robust)
-    return γ
 end

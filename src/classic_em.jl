@@ -45,9 +45,7 @@ function fit_mle!(
 
     for it = 1:maxiter
         # M-step
-        # using γ, maximize (update) the parameters
-        α[:] = mean(γ, dims = 1)
-        dists[:] = [fit_mle(dists[k], y, γ[:, k]) for k = 1:K]
+        M_step!(α, dists, y, γ, method)
 
         # E-step
         # evaluate likelihood for each type k
@@ -79,6 +77,21 @@ function fit_mle!(
     end
 
     return history
+end
+
+"""
+    M_step!(α, dists, y, cat, method::StochasticEM)
+For the `ClassicEM` the weigths `γ` computed at E-step for each observation in `y` are used to update `α` and `dists`.
+"""
+function M_step!(α, dists, y::AbstractVecOrMat, γ, method::ClassicEM)
+    α[:] = mean(γ, dims = 1)
+    dists[:] = [fit_mle(dists[k], y, γₖ) for (k, γₖ) in enumerate(eachcol(γ))]
+end
+
+#TODO: could probably replace γ, w by γ*w,
+function M_step!(α, dists, y::AbstractVecOrMat, γ, w, method::ClassicEM)
+    α[:] = mean(γ, weights(w), dims = 1)
+    dists[:] = [fit_mle(dists[k], y, w[:] .* γₖ) for (k, γₖ) in enumerate(eachcol(γ))]
 end
 
 function fit_mle!(
@@ -115,9 +128,7 @@ function fit_mle!(
 
     for it = 1:maxiter
         # M-step
-        # with γ in hand, maximize (update) the parameters
-        α[:] = mean(γ, weights(w), dims = 1)
-        dists[:] = [fit_mle(dists[k], y, w[:] .* γ[:, k]) for k = 1:K]
+        M_step!(α, dists, y, γ, w, method)
 
         # E-step
         # evaluate likelihood for each type k
