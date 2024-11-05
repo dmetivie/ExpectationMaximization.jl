@@ -36,6 +36,8 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
 
 [] Better benchmark against other EM implementations
 
+[] Add advice and better default for `atol` and `rtol` choice (it is not obvious how to select then).
+
 [] Speed up code (always!). So far, I focused on readable code.
 
 ## Example
