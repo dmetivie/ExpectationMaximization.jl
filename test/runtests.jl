@@ -15,8 +15,7 @@ using StableRNGs, Random
     mix_true = MixtureModel([Exponential(θ₁), Gamma(α, θ₂)], [β, 1 - β])
     y = rand(rng, mix_true, N)
     mix_guess = MixtureModel([Exponential(1), Gamma(0.5, 1)], [0.5, 1 - 0.5])
-    mix_mle =
-        fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
+    mix_mle = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
 
     p = params(mix_mle)[1]
     @test isapprox([β, 1 - β], probs(mix_mle); rtol=rtol)
@@ -25,8 +24,7 @@ using StableRNGs, Random
     @test isapprox(θ₂, p[2][2]; rtol=2rtol) # harder to get high accuracy here apparently
 
     # Test rtol
-    mix_mle2 =
-        fit_mle(mix_guess, y; display=:none, rtol=1e-8, atol=0, robust=false, infos=false)
+    mix_mle2 = fit_mle(mix_guess, y; display=:none, rtol=1e-8, atol=0, robust=false, infos=false)
     p = params(mix_mle2)[1]
     @test isapprox([β, 1 - β], probs(mix_mle2); rtol=rtol)
     @test isapprox(θ₁, p[1]...; rtol=rtol)
