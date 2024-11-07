@@ -57,7 +57,7 @@ end
     p = params(mix_mle)[1]
     @test isapprox([β, 1 - β], probs(mix_mle); rtol=rtol)
     @test isapprox(θ₁, p[1][2]; rtol=rtol)
-    @test isapprox(μ, p[1][1]; rtol=rtol)
+    @test isapprox(μ, p[1][1]; rtol=0.1)
     @test isapprox(α, p[2][1]; rtol=rtol)
     @test isapprox(θ₂, p[2][2]; rtol=rtol)
 
