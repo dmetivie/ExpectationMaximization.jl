@@ -3,7 +3,7 @@
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://dmetivie.github.io/ExpectationMaximization.jl/dev)
 
 This package provides a simple implementation of the Expectation Maximization (EM) algorithm used to fit mixture models.
-Due to [Julia](https://julialang.org/) amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) systems, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast! (Have a look at the [Benchmark section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/benchmarks/))
+Due to [Julia](https://julialang.org/) amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) systems, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast! (Take a look at the [Benchmark section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/benchmarks/))
 
 ## What type of mixtures?
 
@@ -17,12 +17,12 @@ In particular, it works on a lot of mixtures:
 
 ## What EM algorithm?
 
-So far the classic EM algorithm and the Stochastic EM are implemented. Look at the [Bibliography section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/biblio) for references.
+So far, the classic EM algorithm and the Stochastic EM are implemented. Look at the [Bibliography section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/biblio) for references.
 
 ## How?
 
 Just define a [`mix::MixtureModel`](https://juliastats.org/Distributions.jl/stable/mixture/) and do `fit_mle(mix, y)` where `y` is you observation array (vector or matrix). That's it! For Stochastic EM, just do `fit_mle(mix, y, method = StochasticEM())`.
-**Have a look at the [Examples](https://dmetivie.github.io/ExpectationMaximization.jl/dev/examples/#Examples) section**.
+**Take a look at the [Examples](https://dmetivie.github.io/ExpectationMaximization.jl/dev/examples/#Examples) section**.
 
 To work, the only requirements are that the components of the mixture `dist ∈ dists = components(mix)` considered (custom or coming from an existing package)
 
@@ -40,9 +40,13 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
 
 [] Speed up code (always!). So far, I focused on readable code.
 
+[] Cool logo
+
+[] I'll soon register the package in French HAL system linked to Software Heritage to get a DOI and citation.
+
 ## Example
 
-Also have a look at the [examples](@ref Examples) section.
+Also take a look at the [examples](@ref Examples) section.
 
 ```julia
 using Distributions

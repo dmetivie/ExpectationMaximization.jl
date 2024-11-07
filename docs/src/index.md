@@ -33,7 +33,7 @@ Or, when possible, represent your “difficult” distribution as a mixture of s
     [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) *currently* does not allow `MixtureModel` to both have discrete and continuous components[^2].
 
 [^1]: Have a look at the [Benchmark section](@ref Benchmarks).
-[^2]: Rain is a good example of mixture having both a discrete (`Delta` distribution in `0`) and continuous (`Exponential`, `Gamma`, ...) component.
+[^2]: Rain is a good example of a mixture having both a discrete (`Delta` distribution in `0`) and continuous (`Exponential`, `Gamma`, ...) component.
 
 ## Algorithms
 
