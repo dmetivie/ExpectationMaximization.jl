@@ -3,6 +3,7 @@
 I was inspired by [this benchmark](https://floswald.github.io/post/em-benchmarks/).
 I am not too sure how to do 100% fair comparisons across languages[^1].
 There is a small overhead for using `PythonCall.jl` and `RCall.jl`. I checked that it was small in my experimentation (~ few milliseconds?).
+Here is the [Jupyter notebook of the benchmark](https://github.com/dmetivie/ExpectationMaximization.jl/blob/714da3ee132984a0ce71263bcc20a70615fab454/benchmarks/benchmark_v2_K2_unidim.ipynb).
 
 I test only the Gaussian Mixture case, since it is the most common type of mixture (remember that this package allows plenty of other mixtures).
 
