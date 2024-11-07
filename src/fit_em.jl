@@ -14,13 +14,13 @@ function fit_mle(
     mix::MixtureModel,
     y::AbstractVecOrMat,
     weights...;
-    method = ClassicEM(),
-    display = :none,
-    maxiter = 1000,
-    atol = 1e-3,
-    rtol = nothing,
-    robust = false,
-    infos = false,
+    method=ClassicEM(),
+    display=:none,
+    maxiter=1000,
+    atol=1e-3,
+    rtol=nothing,
+    robust=false,
+    infos=false,
 )
 
     # Initial parameters
@@ -34,11 +34,11 @@ function fit_mle(
             dists,
             y,
             method;
-            display = display,
-            maxiter = maxiter,
-            atol = atol,
-            rtol = rtol,
-            robust = robust,
+            display=display,
+            maxiter=maxiter,
+            atol=atol,
+            rtol=rtol,
+            robust=robust,
         )
     else
         history = fit_mle!(
@@ -47,11 +47,11 @@ function fit_mle(
             y,
             weights...,
             method;
-            display = display,
-            maxiter = maxiter,
-            atol = atol,
-            rtol = rtol,
-            robust = robust,
+            display=display,
+            maxiter=maxiter,
+            atol=atol,
+            rtol=rtol,
+            robust=robust,
         )
     end
 
@@ -68,25 +68,25 @@ function fit_mle(
     mix::AbstractArray{<:MixtureModel},
     y::AbstractVecOrMat,
     weights...;
-    method = ClassicEM(),
-    display = :none,
-    maxiter = 1000,
-    atol = 1e-3,
-    rtol = nothing,
-    robust = false,
-    infos = false,
+    method=ClassicEM(),
+    display=:none,
+    maxiter=1000,
+    atol=1e-3,
+    rtol=nothing,
+    robust=false,
+    infos=false,
 )
 
     mx_max, history_max = fit_mle(
         mix[1],
         y,
         weights...;
-        method = method,
-        display = display,
-        maxiter = maxiter,
-        atol = atol,
-        robust = robust,
-        infos = true,
+        method=method,
+        display=display,
+        maxiter=maxiter,
+        atol=atol,
+        robust=robust,
+        infos=true,
     )
     for j in eachindex(mix)[2:end]
         try
@@ -94,13 +94,13 @@ function fit_mle(
                 mix[j],
                 y,
                 weights...;
-                method = method,
-                display = display,
-                maxiter = maxiter,
-                atol = atol,
-                rtol = rtol,
-                robust = robust,
-                infos = true,
+                method=method,
+                display=display,
+                maxiter=maxiter,
+                atol=atol,
+                rtol=rtol,
+                robust=robust,
+                infos=true,
             )
             if history_max["logtots"][end] < history_new["logtots"][end]
                 mx_max = mx_new
@@ -113,6 +113,8 @@ function fit_mle(
     return infos ? (mx_max, history_max) : mx_max
 end
 
+# E-step methods
+
 function E_step!(
     LL::AbstractMatrix{T},
     c::AbstractVector{T},
@@ -120,7 +122,7 @@ function E_step!(
     dists::AbstractVector{F} where {F<:Distribution},
     α::AbstractVector,
     y::AbstractVector{<:Real};
-    robust = false,
+    robust=false,
 ) where {T<:AbstractFloat}
     # evaluate likelihood for each type k
     for k in eachindex(dists)
@@ -139,10 +141,10 @@ function E_step!(
     dists::AbstractVector{F} where {F<:Distribution},
     α::AbstractVector,
     y::AbstractMatrix;
-    robust = false,
+    robust=false,
 )
     # evaluate likelihood for each type k
-    for k in eachindex(dists)
+    @views for k in eachindex(dists)
         LL[:, k] .= log(α[k])
         for n in axes(y, 2)
             LL[n, k] += logpdf(dists[k], y[:, n])
@@ -150,40 +152,6 @@ function E_step!(
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
-    c[:] = logsumexp(LL, dims = 2)
+    logsumexp!(c, LL) # c[:] = logsumexp(LL, dims=2)
     γ[:, :] = exp.(LL .- c)
-end
-
-# Utilities
-
-size_sample(y::AbstractMatrix) = size(y, 2)
-size_sample(y::AbstractVector) = length(y)
-
-argmaxrow(M) = [argmax(r) for r in eachrow(M)]
-
-"""
-    predict(mix::MixtureModel, y::AbstractVector; robust=false)
-Evaluate the most likely category for each observations given a `MixtureModel`.
-- `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
-"""
-function predict(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
-    return argmaxrow(predict_proba(mix, y; robust = robust))
-end
-
-"""
-    predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
-Evaluate the probability for each observations to belong to a category given a `MixtureModel`..
-- `robust = true` will prevent the (log)likelihood to under(overflow)flow to `-∞` (or `∞`).
-"""
-function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust = false)
-    # evaluate likelihood for each components k
-    dists = mix.components
-    α = probs(mix)
-    K = length(dists)
-    N = size_sample(y)
-    LL = zeros(N, K)
-    γ = similar(LL)
-    c = zeros(N)
-    E_step!(LL, c, γ, dists, α, y; robust = robust)
-    return γ
 end

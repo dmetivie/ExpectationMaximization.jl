@@ -17,11 +17,11 @@ function fit_mle!(
     dists::AbstractVector{F} where {F<:Distribution},
     y::AbstractVecOrMat,
     method::ClassicEM;
-    display = :none,
-    maxiter = 1000,
-    atol = 1e-3,
-    rtol = nothing,
-    robust = false,
+    display=:none,
+    maxiter=1000,
+    atol=1e-3,
+    rtol=nothing,
+    robust=false,
 )
 
     @argcheck display in [:none, :iter, :final]
@@ -37,7 +37,7 @@ function fit_mle!(
     c = zeros(N)
 
     # E-step
-    E_step!(LL, c, γ, dists, α, y; robust = robust)
+    E_step!(LL, c, γ, dists, α, y; robust=robust)
 
     # Loglikelihood
     logtot = sum(c)
@@ -45,13 +45,11 @@ function fit_mle!(
 
     for it = 1:maxiter
         # M-step
-        # using γ, maximize (update) the parameters
-        α[:] = mean(γ, dims = 1)
-        dists[:] = [fit_mle(dists[k], y, γ[:, k]) for k = 1:K]
+        M_step!(α, dists, y, γ, method)
 
         # E-step
         # evaluate likelihood for each type k
-        E_step!(LL, c, γ, dists, α, y; robust = robust)
+        E_step!(LL, c, γ, dists, α, y; robust=robust)
 
         # Loglikelihood
         logtotp = sum(c)
@@ -81,17 +79,32 @@ function fit_mle!(
     return history
 end
 
+"""
+    M_step!(α, dists, y, cat, method::StochasticEM)
+For the `ClassicEM` the weigths `γ` computed at E-step for each observation in `y` are used to update `α` and `dists`.
+"""
+function M_step!(α, dists, y::AbstractVecOrMat, γ, method::ClassicEM)
+    α[:] = mean(γ, dims=1)
+    dists[:] = [fit_mle(dists[k], y, γₖ) for (k, γₖ) in enumerate(eachcol(γ))]
+end
+
+#TODO: could probably replace γ, w by γ*w,
+function M_step!(α, dists, y::AbstractVecOrMat, γ, w, method::ClassicEM)
+    α[:] = mean(γ, weights(w), dims=1)
+    dists[:] = [fit_mle(dists[k], y, w[:] .* γₖ) for (k, γₖ) in enumerate(eachcol(γ))]
+end
+
 function fit_mle!(
     α::AbstractVector,
     dists::AbstractVector{F} where {F<:Distribution},
     y::AbstractVecOrMat,
     w::AbstractVector,
     method::ClassicEM;
-    display = :none,
-    maxiter = 1000,
-    atol = 1e-3,
-    rtol = nothing,
-    robust = false,
+    display=:none,
+    maxiter=1000,
+    atol=1e-3,
+    rtol=nothing,
+    robust=false,
 )
 
     @argcheck display in [:none, :iter, :final]
@@ -107,7 +120,7 @@ function fit_mle!(
     c = zeros(N)
 
     # E-step
-    E_step!(LL, c, γ, dists, α, y; robust = robust)
+    E_step!(LL, c, γ, dists, α, y; robust=robust)
 
     # Loglikelihood
     logtot = sum(w[n] * c[n] for n = 1:N) #dot(w, c)
@@ -115,13 +128,11 @@ function fit_mle!(
 
     for it = 1:maxiter
         # M-step
-        # with γ in hand, maximize (update) the parameters
-        α[:] = mean(γ, weights(w), dims = 1)
-        dists[:] = [fit_mle(dists[k], y, w[:] .* γ[:, k]) for k = 1:K]
+        M_step!(α, dists, y, γ, w, method)
 
         # E-step
         # evaluate likelihood for each type k
-        E_step!(LL, c, γ, dists, α, y; robust = robust)
+        E_step!(LL, c, γ, dists, α, y; robust=robust)
 
         # Loglikelihood
         logtotp = sum(w[n] * c[n] for n in eachindex(c)) #dot(w, c)
