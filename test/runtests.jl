@@ -33,7 +33,7 @@ using StableRNGs, Random
 end
 
 @testset "Stochastic EM Univariate continuous Mixture Exponential + Laplace" begin
-    rng = StableRNG(123)
+    rng = StableRNG(1234) # these SEM tests are quite sensitive to seed/rtol
     N = 50_000
     θ₁ = 10
     θ₂ = 0.8
@@ -51,13 +51,13 @@ end
         atol=1e-3,
         robust=false,
         infos=false,
-        method=StochasticEM(),
+        method=StochasticEM(rng),
     )
 
     p = params(mix_mle)[1]
     @test isapprox([β, 1 - β], probs(mix_mle); rtol=rtol)
     @test isapprox(θ₁, p[1][2]; rtol=rtol)
-    @test isapprox(μ, p[1][1]; rtol=0.15)
+    @test isapprox(μ, p[1][1]; rtol=rtol)
     @test isapprox(α, p[2][1]; rtol=rtol)
     @test isapprox(θ₂, p[2][2]; rtol=rtol)
 
@@ -69,12 +69,12 @@ end
         rtol=1e-6,
         robust=false,
         infos=false,
-        method=StochasticEM(),
+        method=StochasticEM(rng),
     )
     p = params(mix_mle2)[1]
     @test isapprox([β, 1 - β], probs(mix_mle2); rtol=rtol)
     @test isapprox(θ₁, p[1][2]; rtol=rtol)
-    @test isapprox(μ, p[1][1]; rtol=0.15)
+    @test isapprox(μ, p[1][1]; rtol=rtol)
     @test isapprox(α, p[2][1]; rtol=rtol)
     @test isapprox(θ₂, p[2][2]; rtol=rtol)
 end
