@@ -2,7 +2,9 @@
 
 # These are preliminaries benchmarks between different (Gaussian) Mixture packages. In fact `ExpectationMaximization.jl` deals with arbitrary mixture models (given the functions `log(dist)` and `fit_mle(dist, y[, w])`). `Sklearn` and `GaussianMixtures.jl` are specialized for Gaussian Mixtures. `mixtools` support several mixtures type.
 
-# In principle I should benchmark larger hidden state/latent/class `K`. Here it is only `K = 2`. The dimension also should be larger.
+# Package version and system configuration are available at the end.
+
+# I will benchmark larger hidden state/latent/class `K`. Here it is only `K = 2`. The dimension also should be larger.
 # I tried to be as fair as possible with the benchmarks, but some packages do many things I am not certain to have completely avoided e.g. I want all benchmark to have same initial state, however `sklearn` tries to find good initial condition.
 
 # ## Set up
@@ -15,12 +17,12 @@ using StatsPlots, LaTeXStrings
 
 using ExpectationMaximization 
 using GaussianMixtures 
-using PythonCall, CondaPkg
 using RCall
+using PythonCall
 
 # One could use `@rimport microbenchmark` to benchmark in R and `timeit = pyimport("timeit")` in Python to prevent a potential overhead time of using `RCall.jl` and `PythonCall.jl`, however I find them very hard to manipulate compare to `BenchmarkTools.jl`.
 
-# Set threads to 1 to be fair. (Note that `ExpectationMaximization.jl` is expected to have thread support at some point).
+# Set threads to 1 to be fair. (Note that `ExpectationMaximization.jl` will have thread support at some point).
 
 BLAS.set_num_threads(1)
 
@@ -32,11 +34,11 @@ os.environ["OMP_NUM_THREADS"] = "1"
 
 # ### R
 
-# For some reason this was not working from Julia.
+# For some reason the following install from Julia was not working (hence I installed with `R` directly).
 # ```julia
 # R"""install.packages("mixtools", repos='http://cran.us.r-project.org')"""
 # ```
-@rimport mixtools # https://www.rdocumentation.org/packages/mixtools/versions/2.0.0
+@rimport mixtools # https://www.rdocumentation.org/packages/mixtools
 R_EM = mixtools.normalmixEM
 
 #-
@@ -57,7 +59,7 @@ end
 # ```
 
 np = pyimport("numpy")
-sklearn = pyimport("sklearn.mixture") # scikit-learn 1.3.2
+sklearn = pyimport("sklearn.mixture") 
 py_EM = sklearn.GaussianMixture
 #-
 function py_sklearn(y, mu, sigma, alpha, iters=100; infos=0, verbose_interval=1, tol=1e-5)
@@ -139,7 +141,7 @@ end
 # I asked a question [here](https://github.com/scikit-learn/scikit-learn/discussions/25916)
 # Plus there seem to have a long compilation time
 
-for j in eachindex(KK)
+@time "All simus" for j in eachindex(KK)
     K = KK[j]
     for i in eachindex(NN)
         n = NN[i]
@@ -191,23 +193,23 @@ begin
 end
 #-
 savefig("timing_K_2.pdf") 
-savefig("timing_K_2.svg") 
+savefig("timing_K_2.svg");
 
 # Ratio view
 begin
     K = 2
     plot(legend=:topleft, size=(900, 800), legendfontsize = 16, bottom_margin = 10Plots.mm, tickfontsize = 16, xlabelfontsize = 18, ylabelfontsize = 18)
-    [plot!(NN, d[key][:, 1]./d["ExpectationMaximization.jl"][:, 1], label=key, c=na+1) for (na, key) in collect(enumerate(Names[2:end]))]
-    ylabel!("Time (s)")
+    [plot!(NN, d[key][:, 1]./d["ExpectationMaximization.jl"][:, 1], label=string(key,"/EM.jl"), c=na+1) for (na, key) in collect(enumerate(Names[2:end]))]
+    ylabel!("Timing ratio")
     hline!([1], c=:black, label = :none)
-        xaxis!(:log10)
-    ylims!(0,12.5)
+    xaxis!(:log10)
+    ylims!(0,Inf)
     xlabel!(L"N")
     xticks!(xNN)
 end
 #-
 savefig("timing_K_2_ratio.pdf")
-savefig("timing_K_2_ratio.svg")
+savefig("timing_K_2_ratio.svg");
 
 # ## Reproducibility
 
@@ -222,6 +224,7 @@ import Pkg; Pkg.status()
 sys = pyimport("sys")
 print("Python version:", sys.version)
 # Sklearn
+using CondaPkg # to install sklearn
 CondaPkg.status()
 # R and packages
 println(R"sessionInfo()")
