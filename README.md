@@ -32,17 +32,33 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
 
 ## TODO (feel free to contribute)
 
-[] Add more variants to of the EM algorithm (so far there are the classic and stochastic version).
+- Add more variants to of the EM algorithm (so far there are the classic and stochastic version).
 
-[] Better benchmark against other EM implementations
+- Better benchmark against other EM implementations
 
-[] Add advice and better default for `atol` and `rtol` choice (it is not obvious how to select then).
+- Add advice and better default for `atol` and `rtol` choice (it is not obvious how to select then).
 
-[] Speed up code (always!). So far, I focused on readable code.
+- Speed up code (always!). So far, I focused on readable code.
 
-[] Cool logo
+- Cool logo
 
-[] I'll soon register the package in French HAL system linked to Software Heritage to get a DOI and citation.
+- Do a proper software paper.
+
+## Citation
+
+If you use this package, please cite it with the following biblatex code:
+
+```
+@software{EM.jl-HAL,
+  Author = {David Métivier},
+  Title = {ExpectationMaximization.jl: A simple but generic implementation of Expectation Maximization algorithms to fit mixture models},
+  Doi = {hal-04784091},
+  Url = {https://hal.inrae.fr/hal-04784091},
+  Copyright = {MIT License}
+}
+```
+
+For now, it is only on the HAL open archive (that my institute wants me to use) and is linked to a Software Heritage ID [SWHID](https://archive.softwareheritage.org/browse/origin/?origin_url=https://hal.archives-ouvertes.fr/hal-04784091).
 
 ## Example
 
