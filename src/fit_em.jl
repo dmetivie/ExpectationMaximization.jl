@@ -121,7 +121,7 @@ function E_step!(
     γ::AbstractMatrix{T},
     dists::AbstractVector{F} where {F<:Distribution},
     α::AbstractVector,
-    y::AbstractVector{<:Real};
+    y::AbstractVector;
     robust=false,
 ) where {T<:AbstractFloat}
     # evaluate likelihood for each type k

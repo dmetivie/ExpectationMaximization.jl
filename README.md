@@ -21,22 +21,22 @@ So far, the classic EM algorithm and the Stochastic EM are implemented. Look at 
 
 ## How?
 
-Just define a [`mix::MixtureModel`](https://juliastats.org/Distributions.jl/stable/mixture/) and do `fit_mle(mix, y)` where `y` is you observation array (vector or matrix). That's it! For Stochastic EM, just do `fit_mle(mix, y, method = StochasticEM())`.
+Just define a [`mix::MixtureModel`](https://juliastats.org/Distributions.jl/stable/mixture/) and do `fit_mle(mix, y)` where `y` is your observation array (vector or matrix). That's it! For Stochastic EM, just do `fit_mle(mix, y, method = StochasticEM())`.
 **Take a look at the [Examples](https://dmetivie.github.io/ExpectationMaximization.jl/dev/examples/#Examples) section**.
 
 To work, the only requirements are that the components of the mixture `dist ∈ dists = components(mix)` considered (custom or coming from an existing package)
 
 1. Are a subtype of `Distribution` i.e. `dist<:Distribution`.
 2. The `logpdf(dist, y)` is defined (it is used in the E-step)
-3. The `fit_mle(dist, y, weigths)` returns the distribution with parameters equals to MLE. This is used in the M-step of the `ClassicalEM` algorithm. For the `StocasticEM` version, only `fit_mle(dist, y)` is needed. Type or instance version of `fit_mle` for your `dist` are accepted thanks to this [conversion line](https://github.com/dmetivie/ExpectationMaximization.jl/blob/60e833236a122cb5ef58150b1a445e2941ace5d1/src/that_should_be_in_Distributions.jl#L16).
+3. The `fit_mle(dist, y, weights)` returns the distribution with parameters equals to MLE. This is used in the M-step of the `ClassicalEM` algorithm. For the `StochasticEM` version, only `fit_mle(dist, y)` is needed. Type or instance version of `fit_mle` for your `dist` are accepted thanks to this [conversion line](https://github.com/dmetivie/ExpectationMaximization.jl/blob/60e833236a122cb5ef58150b1a445e2941ace5d1/src/that_should_be_in_Distributions.jl#L16).
 
 ## TODO (feel free to contribute)
 
-- Add more variants to of the EM algorithm (so far there are the classic and stochastic version).
+- Add more variants of the EM algorithm (so far there are the classic and stochastic version).
 
 - Better benchmark against other EM implementations
 
-- Add advice and better default for `atol` and `rtol` choice (it is not obvious how to select then).
+- Add advice and better default for `atol` and `rtol` choice (it is not obvious how to select them).
 
 - Speed up code (always!). So far, I focused on readable code.
 
@@ -106,3 +106,5 @@ isapprox(θ₂, p[2][2]; rtol = rtol)
 ```
 
 ![EM_mixture_example.svg](img/EM_mixture_example.svg)
+
+<!-- https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Ftotal_downloads%2Fexpectationmaximization&query=total_requests&label=Downloads -->
