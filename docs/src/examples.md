@@ -193,7 +193,7 @@ mix_true = MixtureModel([d1, d2], [β, 1 - β])
 y = rand(mix_true, N)
 
 # We choose initial guess very close to the true solution just to show the EM algorithm convergence.
-# This particular choice of mixture of mixture Gaussian with another Gaussian is non identifiable hence we execpt other solution far away from the true solution
+# This particular choice of mixture of mixture Gaussian with another Gaussian is non identifiable hence we expect other solutions far away from the true solution
 d1_guess = MixtureModel([Laplace(θ₁ - 2, σ₁ + 1), Normal(θ₂ + 1, σ₂ + 1)], [α + 0.1, 1 - α - 0.1])
 d2_guess = Normal(θ₀ - 1, σ₀ - 0.05)
 

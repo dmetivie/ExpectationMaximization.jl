@@ -6,7 +6,7 @@
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://dmetivie.github.io/ExpectationMaximization.jl/dev)
 
 This package provides a simple implementation of the Expectation Maximization (EM) algorithm used to fit mixture models.
-Due to [Julia](https://julialang.org/) amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) systems, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast! (Take a look at the [Benchmark section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/benchmarks/))
+Due to [Julia](https://julialang.org/)'s amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) system, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast! Take a look at the [Benchmark section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/benchmarks/).
 
 ## What type of mixtures?
 
@@ -16,6 +16,7 @@ In particular, it works on a lot of mixtures:
 - Mixture of Univariate discrete distributions
 - Mixture of Multivariate distributions (continuous or discrete)
 - Mixture of mixtures (univariate or multivariate and continuous or discrete)
+- User defined mixtures (e.g. custom distributions)
 - More?
 
 ## What EM algorithm?
@@ -31,7 +32,7 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
 
 1. Are a subtype of `Distribution` i.e. `dist<:Distribution`.
 2. The `logpdf(dist, y)` is defined (it is used in the E-step)
-3. The `fit_mle(dist, y, weights)` returns the distribution with parameters equals to MLE. This is used in the M-step of the `ClassicalEM` algorithm. For the `StochasticEM` version, only `fit_mle(dist, y)` is needed. Type or instance version of `fit_mle` for your `dist` are accepted thanks to this [conversion line](https://github.com/dmetivie/ExpectationMaximization.jl/blob/60e833236a122cb5ef58150b1a445e2941ace5d1/src/that_should_be_in_Distributions.jl#L16).
+3. The `fit_mle(dist, y, weights)` returns the distribution with the updated parameters maximizing the likelihood. This is used in the M-step of the `ClassicalEM` algorithm. For the `StochasticEM` version, only `fit_mle(dist, y)` is needed. Type or instance version of `fit_mle` for your `dist` are accepted thanks to this [conversion line](https://github.com/dmetivie/ExpectationMaximization.jl/blob/60e833236a122cb5ef58150b1a445e2941ace5d1/src/that_should_be_in_Distributions.jl#L16).
 
 ## TODO (feel free to contribute)
 

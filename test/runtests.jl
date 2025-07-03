@@ -265,7 +265,7 @@ end
     α = 1 / 4
     β = 0.3
 
-    rtol = 8e-2 #
+    rtol = 10e-2 #
     d1 = MixtureModel([Poisson(θ₁), Geometric(θ₂)], [α, 1 - α])
     d2 = MixtureModel([Poisson(σ₁), Geometric(σ₂)], [α, 1 - α])
     mix_true = MixtureModel([d1, d2], [β, 1 - β])

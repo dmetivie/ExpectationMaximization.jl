@@ -1,6 +1,6 @@
 # [Instance vs Type version](@id InstanceVType)
 
-This package relies heavily on the types and methods defined in `Distributions.jl` e.g., `fit_mle` and `logpdf`.
+This package relies heavily on the types and methods defined in `Distributions.jl`, e.g., `fit_mle` and `logpdf`.
 However, it differs slightly by one point: it defines and uses an “instance version” of `fit_mle(dist::Distribution, x, args...)`.
 For the package to work and be generic, the input `dist` must be an “instance” i.e., an actual distribution like `Normal(0,1)` not just the type `Normal`.
 For `MixtureModels` (and `ProductDistributions`) this is critical to extract the various distributions inside, while the `Type` version does not (currently) contain such information.
