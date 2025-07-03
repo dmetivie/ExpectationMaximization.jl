@@ -1,5 +1,8 @@
 # ExpectationMaximization
 
+[<img src="https://raw.githubusercontent.com/dmetivie/ExpectationMaximization.jl/master/docs/src/assets/logo.svg" width="25%" alt = "ExpectationMaximization.jl"/>
+](https://raw.githubusercontent.com/dmetivie/ExpectationMaximization.jl/master/docs/src/assets/logo.svg)
+
 [![Docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://dmetivie.github.io/ExpectationMaximization.jl/dev)
 
 This package provides a simple implementation of the Expectation Maximization (EM) algorithm used to fit mixture models.
@@ -34,13 +37,16 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
 
 - Add more variants of the EM algorithm (so far there are the classic and stochastic version).
 
-- Better benchmark against other EM implementations
+- Better benchmark against other EM 
+
+- Improve robustness against edge cases (e.g. empty data, empty mixture, etc.). See [PR #12](https://github.com/dmetivie/ExpectationMaximization.jl/pull/12) (if you have suggestions, I am still undecided about the best way to handle this).
 
 - Add advice and better default for `atol` and `rtol` choice (it is not obvious how to select them).
 
 - Speed up code (always!). So far, I focused on readable code.
 
-- Cool logo
+- Connecting `ExpectationMaximization.jl` to `MLJ.jl` and [`MLJModels.jl`](https://juliaai.github.io/MLJModelInterface.jl/stable/) in the clustering algorithm section.
+
 
 - Do a proper software paper.
 
@@ -60,7 +66,7 @@ If you use this package, please cite it with the following biblatex code:
 
 For now, it is only on the HAL open archive (that my institute wants me to use) and is linked to a Software Heritage ID [SWHID](https://archive.softwareheritage.org/browse/origin/?origin_url=https://hal.archives-ouvertes.fr/hal-04784091).
 
-## Example
+## Basic usage
 
 Also take a look at the [examples](@ref Examples) section.
 
