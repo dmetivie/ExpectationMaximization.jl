@@ -8,7 +8,10 @@
    version="1.1"
    id="svg17959"
    inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
-   sodipodi:docname="export_v1.svg"
+   sodipodi:docname="logo.svg"
+   inkscape:export-filename="logo.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -24,9 +27,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="0.50646226"
-     inkscape:cx="451.16886"
-     inkscape:cy="348.49586"
+     inkscape:zoom="1.4324916"
+     inkscape:cx="403.84181"
+     inkscape:cy="267.01727"
      inkscape:window-width="1920"
      inkscape:window-height="991"
      inkscape:window-x="-9"
@@ -62,9 +65,16 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-41.825279,-21.87088)">
+    <ellipse
+       style="fill:#cb3c33;fill-opacity:1;stroke:none;stroke-width:1.02577;paint-order:stroke fill markers"
+       id="path473-2-1-2"
+       cx="117.66814"
+       cy="104.10732"
+       rx="7.3161197"
+       ry="7.0548306" />
     <g
        id="g1014"
-       transform="matrix(0.26458333,0,0,0.26458333,63.31389,15.285163)">
+       transform="matrix(0.26279668,0,0,0.26279668,63.38766,15.687064)">
       <g
          clip-path="url(#clip-0-a7a371d1)"
          id="g834">
@@ -150,22 +160,15 @@
     <ellipse
        style="fill:#9558b2;fill-opacity:1;stroke:none;stroke-width:1.02577;paint-order:stroke fill markers"
        id="path473"
-       cx="179.80286"
-       cy="105.69482"
+       cx="178.74454"
+       cy="104.10732"
        rx="7.3161197"
        ry="7.0548306" />
     <ellipse
        style="fill:#389826;fill-opacity:1;stroke:none;stroke-width:1.02577;paint-order:stroke fill markers"
        id="path473-2"
-       cx="147.90175"
+       cx="147.37259"
        cy="81.152748"
-       rx="7.3161197"
-       ry="7.0548306" />
-    <ellipse
-       style="fill:#cb3c33;fill-opacity:1;stroke:none;stroke-width:1.02577;paint-order:stroke fill markers"
-       id="path473-2-1-2"
-       cx="117.66814"
-       cy="105.69483"
        rx="7.3161197"
        ry="7.0548306" />
   </g>
