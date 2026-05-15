@@ -91,7 +91,7 @@ end
 #TODO: could probably replace γ, w by γ*w,
 function M_step!(α, dists, y::AbstractVecOrMat, γ, w, method::ClassicEM)
     α[:] = mean(γ, weights(w), dims=1)
-    dists[:] = [fit_mle(dists[k], y, w[:] .* γₖ) for (k, γₖ) in enumerate(eachcol(γ))]
+    dists[:] = [fit_mle(dists[k], y, w .* γₖ) for (k, γₖ) in enumerate(eachcol(γ))]
 end
 
 function fit_mle!(
