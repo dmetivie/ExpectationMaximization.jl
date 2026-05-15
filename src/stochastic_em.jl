@@ -110,7 +110,7 @@ function M_step!(α, dists, y::AbstractVector, cat, w, method::StochasticEM)
 end
 
 function M_step!(α, dists, y::AbstractMatrix, cat, w, method::StochasticEM)
-    α[:] = [sum(w[cat[k]]) for k in 1:K] / sum(w)
+    α[:] = [sum(w[cₖ]) for cₖ in cat] / sum(w)
     dists[:] = [fit_mle(dists[k], y[:, cₖ], w[cₖ]) for (k, cₖ) in enumerate(cat)]
 end
 

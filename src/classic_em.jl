@@ -80,7 +80,7 @@ function fit_mle!(
 end
 
 """
-    M_step!(α, dists, y, cat, method::StochasticEM)
+    M_step!(α, dists, y, γ, method::ClassicEM)
 For the `ClassicEM` the weigths `γ` computed at E-step for each observation in `y` are used to update `α` and `dists`.
 """
 function M_step!(α, dists, y::AbstractVecOrMat, γ, method::ClassicEM)
