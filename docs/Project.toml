@@ -12,4 +12,10 @@ StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 ExpectationMaximization = {path = ".."}
 
 [compat]
+CSV = "0.10.16"
+Distributions = "0.25.125"
 Documenter = "1"
+ExpectationMaximization = "0.2.4"
+Literate = "2.21.0"
+MLDatasets = "0.7.21"
+StatsPlots = "0.15.8"
