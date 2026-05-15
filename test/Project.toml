@@ -7,3 +7,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
 ExpectationMaximization = {path = ".."}
+[compat]
+Distributions = "0.25.125"
+ExpectationMaximization = "0.2.4"
+StableRNGs = "1.0.4"
