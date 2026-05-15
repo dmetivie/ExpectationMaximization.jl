@@ -15,7 +15,7 @@ ExpectationMaximization = {path = ".."}
 CSV = "0.10.16"
 Distributions = "0.25.125"
 Documenter = "1"
-ExpectationMaximization = "0.2.4"
+ExpectationMaximization = "0.3"
 Literate = "2.21.0"
 MLDatasets = "0.7.21"
 StatsPlots = "0.15.8"
