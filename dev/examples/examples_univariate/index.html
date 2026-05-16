@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Univariate · ExpectationMaximization.jl</title><meta name="title" content="Univariate · ExpectationMaximization.jl"/><meta property="og:title" content="Univariate · ExpectationMaximization.jl"/><meta property="twitter:title" content="Univariate · ExpectationMaximization.jl"/><meta name="description" content="Documentation for ExpectationMaximization.jl."/><meta property="og:description" content="Documentation for ExpectationMaximization.jl."/><meta property="twitter:description" content="Documentation for ExpectationMaximization.jl."/><meta property="og:url" content="https://dmetivie.github.io/ExpectationMaximization.jl/examples/examples_univariate/"/><meta property="twitter:url" content="https://dmetivie.github.io/ExpectationMaximization.jl/examples/examples_univariate/"/><link rel="canonical" href="https://dmetivie.github.io/ExpectationMaximization.jl/examples/examples_univariate/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.svg" alt="ExpectationMaximization.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">ExpectationMaximization.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">📖 Examples</span><ul><li class="is-active"><a class="tocitem" href>Univariate</a><ul class="internal"><li><a class="tocitem" href="#Normal-Laplace-Exponential"><span>Normal + Laplace + Exponential</span></a></li><li><a class="tocitem" href="#Mixture-of-Mixture-and-Univariate"><span>Mixture of Mixture and Univariate</span></a></li></ul></li><li><a class="tocitem" href="../examples_multivariate/">Multivariate</a></li></ul></li><li><a class="tocitem" href="../../biblio/">Bibliography</a></li><li><a class="tocitem" href="../../benchmarks/">Benchmarks</a></li><li><a class="tocitem" href="../../fit_mle/">Instance vs Type version</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">📖 Examples</a></li><li class="is-active"><a href>Univariate</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Univariate</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/dmetivie/ExpectationMaximization.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/dmetivie/ExpectationMaximization.jl/blob/master/examples/examples_univariate.jl" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using Distributions
+using ExpectationMaximization
+using StatsPlots
+
+using Random
+Random.seed!(1234)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Random.TaskLocalRNG()</code></pre><h1 id="Univariate-Examples"><a class="docs-heading-anchor" href="#Univariate-Examples">Univariate Examples</a><a id="Univariate-Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Univariate-Examples" title="Permalink"></a></h1><h2 id="Normal-Laplace-Exponential"><a class="docs-heading-anchor" href="#Normal-Laplace-Exponential">Normal + Laplace + Exponential</a><a id="Normal-Laplace-Exponential-1"></a><a class="docs-heading-anchor-permalink" href="#Normal-Laplace-Exponential" title="Permalink"></a></h2><p>Here for fun we test a very unusual combination of mixtures (with distributions not necessarily having the same support, like <code>Normal</code> and <code>Exponential</code>).</p><p>Parameters</p><pre><code class="language-julia hljs">N = 5_000
+θ₁ = 5
+θ₂ = 0.8
+α = 0.5
+β = 0.3
+μ = -1
+a = 2
+
+mix_true = MixtureModel([Laplace(μ, θ₁), Normal(α, θ₂), Exponential(a)], [β / 2, 1 - β, β / 2])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">MixtureModel{Distribution{Univariate, Continuous}}(K = 3)
+components[1] (prior = 0.1500): Laplace{Float64}(μ=-1.0, θ=5.0)
+components[2] (prior = 0.7000): Normal{Float64}(μ=0.5, σ=0.8)
+components[3] (prior = 0.1500): Exponential{Float64}(θ=2.0)
+</code></pre><p>Components of the mixture</p><pre><code class="language-julia hljs">begin
+    plot(mix_true, label=[&quot;Laplace&quot; &quot;Normal&quot; &quot;Exponential&quot;])
+    ylabel!(&quot;Log PDF&quot;, yaxis=:log10)
+end</code></pre><img src="d08281b7.svg" alt="Example block output"/><p>Now we generate some data from this mixture.</p><pre><code class="language-julia hljs">y = rand(mix_true, N)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5000-element Vector{Float64}:
+  1.3697667939428688
+ -5.055841566991943
+  2.1438104448512294
+  0.2560789958428542
+  4.790467644147499
+  0.01670006157378604
+ -5.881841442284289
+  0.00576288770054913
+  1.1833637830183297
+ -3.833918597914647
+  ⋮
+ -0.4024660363860532
+  1.5692286951713137
+  3.129267640861765
+ -0.41318825018959504
+  0.8788297791831726
+ -0.6110473623769885
+  0.26299784375906055
+  3.153213590715159
+ -0.22508151256623823</code></pre><p>We specify an initial condition for the EM fit.</p><pre><code class="language-julia hljs">mix_guess = MixtureModel([Laplace(-1, 1), Normal(2, 1), Exponential(3)], [1 / 3, 1 / 3, 1 / 3]);</code></pre><p>Fit Classic EM</p><pre><code class="language-julia hljs">mix_mle_C, hist_C = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=true, method=ClassicEM())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(MixtureModel{Distribution{Univariate, Continuous}}(K = 3)
+components[1] (prior = 0.1208): Laplace{Float64}(μ=-2.0654300386902666, θ=5.101139783995339)
+components[2] (prior = 0.7106): Normal{Float64}(μ=0.5016811606065686, σ=0.7924463837487031)
+components[3] (prior = 0.1685): Exponential{Float64}(θ=2.0730867416226)
+, Dict{String, Any}(&quot;iterations&quot; =&gt; 97, &quot;converged&quot; =&gt; true, &quot;logtots&quot; =&gt; [-10077.913589269996, -9813.204252103003, -9650.02922740977, -9553.812612611146, -9492.945044132866, -9448.545145971717, -9414.572391834023, -9388.9147718783, -9370.07357111042, -9356.458700531442  …  -9308.025137929206, -9308.022952103718, -9308.02091812281, -9308.019201650743, -9308.01814523095, -9308.016976725425, -9308.015682866544, -9308.014256695347, -9308.01269397241, -9308.012007016245]))</code></pre><p>Fit Stochastic EM</p><pre><code class="language-julia hljs">mix_mle_S, hist_S = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=true, method=StochasticEM())</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(MixtureModel{Distribution{Univariate, Continuous}}(K = 3)
+components[1] (prior = 0.1120): Laplace{Float64}(μ=-2.476904275492246, θ=5.151806065899432)
+components[2] (prior = 0.6968): Normal{Float64}(μ=0.48958379007363495, σ=0.7923670294376742)
+components[3] (prior = 0.1912): Exponential{Float64}(θ=2.008833869429946)
+, Dict{String, Any}(&quot;iterations&quot; =&gt; 729, &quot;converged&quot; =&gt; true, &quot;logtots&quot; =&gt; [-10070.08201248543, -9835.397692658662, -9665.059874234186, -9566.483449565078, -9506.718198386128, -9464.751619183568, -9429.32784701953, -9403.701713448147, -9387.16220199206, -9368.740368737359  …  -9308.31789179692, -9308.15544747136, -9308.344236116165, -9308.692449563998, -9308.86072683231, -9308.341613491524, -9308.569574281171, -9309.132709408343, -9309.035195916145, -9309.03560370296]))</code></pre><p>Plot the results</p><pre><code class="language-julia hljs">begin
+    x = -20:0.1:20
+    pmix = plot(x, pdf.(mix_true, x), label=&quot;True&quot;, ylabel=&quot;PDF&quot;)
+    plot!(pmix, x, pdf.(mix_guess, x), label=&quot;Initial guess&quot;)
+    plot!(pmix, x, pdf.(mix_mle_C, x), label=&quot;fit EM&quot;)
+    plot!(pmix, x, pdf.(mix_mle_S, x), label=&quot;fit sEM&quot;)
+
+    ploss = plot(hist_C[&quot;logtots&quot;], label=&quot;ClassicEM with $(hist_C[&quot;iterations&quot;]) iterations&quot;,
+        c=3, xlabel=&quot;EM iterations&quot;, ylabel=&quot;Log Likelihood&quot;)
+    plot!(ploss, hist_S[&quot;logtots&quot;], label=&quot;StochasticEM with $(hist_S[&quot;iterations&quot;]) iterations&quot;,
+        c=4, s=:dot)
+
+    plot(pmix, ploss)
+end</code></pre><img src="d77d4ebb.svg" alt="Example block output"/><h2 id="Mixture-of-Mixture-and-Univariate"><a class="docs-heading-anchor" href="#Mixture-of-Mixture-and-Univariate">Mixture of Mixture and Univariate</a><a id="Mixture-of-Mixture-and-Univariate-1"></a><a class="docs-heading-anchor-permalink" href="#Mixture-of-Mixture-and-Univariate" title="Permalink"></a></h2><p>To showcase the generality of the package, we show how training a <code>MixtureModel</code> composed of a univariate distribution + a <code>MixtureModel</code> works. Note that, in practice, this can cause some identifiability issues (if everything is <code>Normal</code> for example).</p><pre><code class="language-julia hljs">θ₁ = -5
+θ₂ = 2
+σ₁ = 1
+σ₂ = 1.5
+θ₀ = 0.1
+σ₀ = 0.1
+
+α = 1 / 2
+β = 0.3
+
+d1 = MixtureModel([Laplace(θ₁, σ₁), Normal(θ₂, σ₂)], [α, 1 - α])
+d2 = Normal(θ₀, σ₀)
+mix_true = MixtureModel([d1, d2], [β, 1 - β])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">MixtureModel{Distribution{Univariate, Continuous}}(K = 2)
+components[1] (prior = 0.3000): MixtureModel{Distribution{Univariate, Continuous}}(K = 2)
+components[1] (prior = 0.5000): Laplace{Float64}(μ=-5.0, θ=1.0)
+components[2] (prior = 0.5000): Normal{Float64}(μ=2.0, σ=1.5)
+
+components[2] (prior = 0.7000): Normal{Float64}(μ=0.1, σ=0.1)
+</code></pre><p>We generate some data from this mixture.</p><pre><code class="language-julia hljs">y = rand(mix_true, N)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">5000-element Vector{Float64}:
+  0.014085591934692443
+  0.24760940842440315
+  1.5405097845338345
+  0.203164530503111
+  0.09151631807604059
+  0.187667508703638
+  0.15594016312772577
+  0.07627229083661219
+  3.8393664687361517
+  0.30226845810652314
+  ⋮
+ -5.00777039102152
+  0.07995944817999515
+  3.888544990084899
+  0.0824804249744599
+  0.3308783250776346
+  0.9498571726438565
+  0.20432741606484378
+  0.0631815457387135
+  0.07579137600107422</code></pre><p>We choose initial guess very close to the true solution to show EM convergence. This Gaussian mixture of mixture is non-identifiable: other solutions far from the truth exist.</p><pre><code class="language-julia hljs">d1_guess = MixtureModel([Laplace(θ₁ - 2, σ₁ + 1), Normal(θ₂ + 1, σ₂ + 1)], [α + 0.1, 1 - α - 0.1])
+d2_guess = Normal(θ₀ - 1, σ₀ - 0.05)
+
+mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
+mix_mle, hist_C = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=true)
+
+begin
+    x = -20:0.1:20
+    pmix = plot(x, pdf.(mix_true, x), label=&quot;True&quot;, ylabel=&quot;PDF&quot;)
+    plot!(pmix, x, pdf.(mix_guess, x), label=&quot;Initial guess&quot;)
+    plot!(pmix, x, pdf.(mix_mle, x), label=&quot;fit EM with $(hist_C[&quot;iterations&quot;]) iterations&quot;)
+end</code></pre><img src="b4c6315b.svg" alt="Example block output"/><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../examples_multivariate/">Multivariate »</a><div class="flexbox-break"></div><p class="footer-message"><a href="https://github.com/dmetivie/ExpectationMaximization.jl">ExpectationMaximization.jl</a> v0.3.0 docs powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Saturday 16 May 2026 08:28">Saturday 16 May 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
