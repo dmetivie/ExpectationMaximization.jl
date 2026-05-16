@@ -55,8 +55,8 @@ StochasticEM
     See [Instance vs Type version](@ref InstanceVType) section for more context.
 
 ```@docs
-fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; kwargs...)
-fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
+fit_mle(mix::Distributions.MixtureModel, y::AbstractVecOrMat, weights...; kwargs...)
+fit_mle(mix::AbstractArray{<:Distributions.MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 ```
 
 ## Utilities
@@ -81,7 +81,7 @@ fit_mle(g::Product, x::AbstractMatrix, args...)
 ```
 
 ```@docs
-fit_mle(dists::VectorOfUnivariateDistribution, x::AbstractMatrix{<:Real}, args...)
+fit_mle(dists::Distributions.VectorOfUnivariateDistribution, x::AbstractMatrix{<:Real}, args...)
 ```
 
 ```@docs

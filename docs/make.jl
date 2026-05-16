@@ -1,6 +1,6 @@
 using Documenter, Pkg, Literate
 using ExpectationMaximization
-using Distributions: VectorOfUnivariateDistribution
+using Distributions
 
 PROJECT_TOML = Pkg.TOML.parsefile(joinpath(@__DIR__, "..", "Project.toml"))
 PkgVERSION = PROJECT_TOML["version"]
