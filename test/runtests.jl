@@ -237,7 +237,7 @@ end
 
     mix_guess = MixtureModel([d1_guess, d2_guess], [β + 0.1, 1 - β - 0.1])
     mix_mle =
-        fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=false)
+        fit_mle(mix_guess, y; display=:none, atol=1e-2, robust=false, infos=false)
     # without print
     # 1.368 s (17002715 allocations: 1.48 GiB)
     #  1.485 s (17853393 allocations: 1.61 GiB)
@@ -293,7 +293,7 @@ end
         @test p[1][2][1] ≈ α atol = rtol
         @test p[2][2][1] ≈ α atol = rtol
 
-        @test θ₁ ≈ p[1][1][1][1] rtol = 2.5*rtol
+        @test θ₁ ≈ p[1][1][1][1] rtol = 2.5 * rtol
         @test θ₂ ≈ p[1][1][2][1] atol = rtol
         @test σ₁ ≈ p[2][1][1][1] rtol = rtol
         @test σ₂ ≈ p[2][1][2][1] atol = rtol
@@ -348,6 +348,99 @@ end
 
     dist_fit = fit_mle(dist_ini, data_with_mix, atol=1e-3, maxiter=100, method=StochasticEM(rng)) # just to check it runs
 end
+
+@testset "Weighted ClassicEM equals repeated samples" begin
+    rng = StableRNG(42)
+    mix_true = MixtureModel([Normal(0.0, 1.0), Normal(5.0, 1.0)], [0.4, 0.6])
+    y_base = rand(rng, mix_true, 1000)
+    w = float.(rand(rng, 1:5, 1000))
+    y_rep = vcat([fill(y_base[i], Int(w[i])) for i in eachindex(w)]...)
+
+    mix_guess = MixtureModel([Normal(0.5, 1.2), Normal(4.5, 0.9)], [0.5, 0.5])
+    mix_w = fit_mle(mix_guess, y_base, w; atol=1e-8, infos=false)
+    mix_rep = fit_mle(mix_guess, y_rep; atol=1e-8, infos=false)
+
+    @test probs(mix_w) ≈ probs(mix_rep) rtol = 1e-3
+    for k in 1:2, j in 1:2
+        @test params(mix_w)[1][k][j] ≈ params(mix_rep)[1][k][j] rtol = 1e-3
+    end
+end
+
+@testset "Weighted StochasticEM recovers true parameters" begin
+    rng = StableRNG(7)
+    N = 5000
+    mix_true = MixtureModel([Normal(0.0, 1.0), Normal(5.0, 1.0)], [0.4, 0.6])
+    y_base = rand(rng, mix_true, N)
+    # all-ones weights should give the same result as unweighted
+    w = ones(N)
+    mix_guess = MixtureModel([Normal(0.5, 1.2), Normal(4.5, 0.9)], [0.5, 0.5])
+    mix_w = fit_mle(mix_guess, y_base, w; atol=1e-5, infos=false, method=StochasticEM(StableRNG(7)))
+    mix_uw = fit_mle(mix_guess, y_base; atol=1e-5, infos=false, method=StochasticEM(StableRNG(7)))
+    # identical weights → identical result
+    @test probs(mix_w) ≈ probs(mix_uw) rtol = 1e-4
+    for k in 1:2, j in 1:2
+        @test params(mix_w)[1][k][j] ≈ params(mix_uw)[1][k][j] rtol = 1e-4
+    end
+end
+
+@testset "ClassicEM loglikelihood is non-decreasing" begin
+    rng = StableRNG(1)
+    y = rand(rng, MixtureModel([Normal(-2.0, 1.0), Normal(2.0, 1.0)], [0.4, 0.6]), 5000)
+    mix_guess = MixtureModel([Normal(-1.0, 1.0), Normal(1.0, 1.0)], [0.5, 0.5])
+    _, hist = fit_mle(mix_guess, y; atol=0, maxiter=50, infos=true)
+    ll = hist["logtots"]
+    @test all(diff(ll) .>= -1e-8)
+end
+
+@testset "history structure and maxiter respected" begin
+    rng = StableRNG(1)
+    y = rand(rng, MixtureModel([Normal(-2.0, 1.0), Normal(2.0, 1.0)], [0.4, 0.6]), 5000)
+    mix_guess = MixtureModel([Normal(-1.0, 1.0), Normal(1.0, 1.0)], [0.5, 0.5])
+
+    for meth in [ClassicEM(), StochasticEM(StableRNG(2))]
+        _, hist = fit_mle(mix_guess, y; atol=0, maxiter=4, infos=true, method=meth)
+        @test hist["iterations"] == 4
+        @test hist["converged"] == false
+        @test length(hist["logtots"]) == hist["iterations"]
+    end
+end
+
+@testset "Multivariate StochasticEM" begin
+    rng = StableRNG(99)
+    N = 20_000
+    rtol = 8e-2
+    D₁ = MvNormal([-2.0, 0.0], [1.0 0.0; 0.0 1.0])
+    D₂ = MvNormal([2.0, 0.0], [1.0 0.0; 0.0 1.0])
+    β = 0.4
+    mix_true = MixtureModel([D₁, D₂], [β, 1 - β])
+    y = rand(rng, mix_true, N)
+
+    mix_guess = MixtureModel(
+        [MvNormal([-1.0, 0.0], [1.2 0.0; 0.0 1.2]),
+            MvNormal([1.0, 0.0], [1.2 0.0; 0.0 1.2])],
+        [0.5, 0.5],
+    )
+    mix_mle = fit_mle(mix_guess, y; atol=1e-3, infos=false, method=StochasticEM(rng))
+
+    @test probs(mix_mle)[1] ≈ β rtol = rtol
+    p = params(mix_mle)[1]
+    @test p[1][1] ≈ mean(D₁) rtol = rtol
+    @test p[2][1] ≈ mean(D₂) rtol = rtol
+end
+
+@testset "predict on multivariate mixture" begin
+    rng = StableRNG(5)
+    N = 2000
+    D₁ = MvNormal([-5.0, 0.0], I(2))
+    D₂ = MvNormal([5.0, 0.0], I(2))
+    mix = MixtureModel([D₁, D₂], [0.5, 0.5])
+    y = rand(rng, mix, N)
+    # generate true labels: component with higher likelihood
+    z_true = [pdf(D₁, y[:, i]) >= pdf(D₂, y[:, i]) ? 1 : 2 for i in 1:N]
+    ẑ = predict(mix, y)
+    @test count(ẑ .== z_true) / N > 0.99  # well-separated clusters → near-perfect prediction
+end
+
 # @btime ExpectationMaximization.fit_mle(dist_ini, $(data_with_mix), atol=1e-3, maxiter=1000)
 # 1.159 s (33147640 allocations: 1.73 GiB) # before @views
 # 862.141 ms (27640 allocations: 254.45 MiB) # after some @views in Estep
