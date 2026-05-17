@@ -23,6 +23,17 @@ function fit_mle!(
     dists::AbstractVector{F} where {F<:Distribution},
     y::AbstractVecOrMat,
     method::StochasticEM;
+    kwargs...,
+)
+    fit_mle!(α, dists, y, nothing, method; kwargs...)
+end
+
+function fit_mle!(
+    α::AbstractVector,
+    dists::AbstractVector{F} where {F<:Distribution},
+    y::AbstractVecOrMat,
+    w::Union{Nothing,AbstractVector},
+    method::StochasticEM;
     display=:none,
     maxiter=1000,
     atol=1e-3,
@@ -34,6 +45,7 @@ function fit_mle!(
     @argcheck maxiter >= 0
 
     N, K = size_sample(y), length(dists)
+    !isnothing(w) && @argcheck length(w) == N
     history = Dict("converged" => false, "iterations" => 0, "logtots" => zeros(0))
 
     # Allocate memory for in-place updates
@@ -41,28 +53,28 @@ function fit_mle!(
     LL = zeros(N, K)
     γ = similar(LL)
     c = zeros(N)
-    ẑ = zeros(Int, N)
+    ẑ = zeros(Int, N)
+
     # E-step
     E_step!(LL, c, γ, dists, α, y; robust=robust)
 
     # Loglikelihood
-    logtot = sum(c)
+    logtot = isnothing(w) ? sum(c) : sum(w[n] * c[n] for n in eachindex(c))
     (display == :iter) && println("Method = $(method)\nIteration 0: loglikelihood = ", logtot)
 
     for it = 1:maxiter
         # S-step
-        ẑ[:] .= [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
-        cat = [findall(ẑ .== k) for k = 1:K]
+        ẑ[:] .= [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
+        cat = [findall(ẑ .== k) for k = 1:K]
 
         # M-step
-        M_step!(α, dists, y, cat, method)
+        isnothing(w) ? M_step!(α, dists, y, cat, method) : M_step!(α, dists, y, cat, w, method)
 
         # E-step
-        # evaluate likelihood for each type k
         E_step!(LL, c, γ, dists, α, y; robust=robust)
 
         # Loglikelihood
-        logtotp = sum(c)
+        logtotp = isnothing(w) ? sum(c) : sum(w[n] * c[n] for n in eachindex(c))
         (display == :iter) && println("Iteration $(it): loglikelihood = ", logtotp)
 
         push!(history["logtots"], logtotp)
@@ -94,7 +106,6 @@ end
 For the `StochasticEM` the `cat` drawn at S-step for each observation in `y` is used to update `α` and `dists`.
 """
 function M_step!(α, dists, y::AbstractVector, cat, method::StochasticEM)
-    # 
     α[:] = length.(cat) / size_sample(y)
     dists[:] = [fit_mle(dists[k], y[cₖ]) for (k, cₖ) in enumerate(cat)]
 end
@@ -112,77 +123,4 @@ end
 function M_step!(α, dists, y::AbstractMatrix, cat, w, method::StochasticEM)
     α[:] = [sum(w[cₖ]) for cₖ in cat] / sum(w)
     dists[:] = [fit_mle(dists[k], y[:, cₖ], w[cₖ]) for (k, cₖ) in enumerate(cat)]
-end
-
-# univariate version with weights
-function fit_mle!(
-    α::AbstractVector,
-    dists::AbstractVector{F} where {F<:Distribution},
-    y::AbstractVecOrMat,
-    w::AbstractVector,
-    method::StochasticEM;
-    display=:none,
-    maxiter=1000,
-    atol=1e-3,
-    rtol=nothing,
-    robust=false,
-)
-
-    @argcheck display in [:none, :iter, :final]
-    @argcheck maxiter >= 0
-    N, K = size_sample(y), length(dists)
-    @argcheck length(w) == N
-    history = Dict("converged" => false, "iterations" => 0, "logtots" => zeros(0))
-
-    # Allocate memory for in-place updates
-
-    LL = zeros(N, K)
-    γ = similar(LL)
-    c = zeros(N)
-
-    # E-step
-    E_step!(LL, c, γ, dists, α, y; robust=robust)
-
-    # Loglikelihood
-    logtot = sum(w[n] * c[n] for n = 1:N) #dot(w, c)
-    (display == :iter) && println("Method = $(method)\nIteration 0: loglikelihood = ", logtot)
-
-    for it = 1:maxiter
-        # S-step
-        ẑ = [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
-        cat = [findall(ẑ .== k) for k = 1:K]
-
-        # M-step
-        M_step!(α, dists, y, cat, w, method)
-
-        # E-step
-        # evaluate likelihood for each type k
-        E_step!(LL, c, γ, dists, α, y; robust=robust)
-
-        # Loglikelihood
-        logtotp = sum(w[n] * c[n] for n in eachindex(c)) #dot(w, c)
-        (display == :iter) && println("Iteration $(it): loglikelihood = ", logtotp)
-
-        push!(history["logtots"], logtotp)
-        history["iterations"] += 1
-
-        if abs(logtotp - logtot) < atol || (rtol !== nothing && abs(logtotp - logtot) < rtol * (abs(logtot) + abs(logtotp)) / 2)
-            (display in [:iter, :final]) &&
-                println("EM converged in ", it, " iterations, final loglikelihood = ", logtotp)
-            history["converged"] = true
-            break
-        end
-
-        logtot = logtotp
-    end
-
-    if !history["converged"]
-        if display in [:iter, :final]
-            println(
-                "EM has not converged after $(history["iterations"]) iterations, final loglikelihood = $logtot",
-            )
-        end
-    end
-
-    return history
 end
