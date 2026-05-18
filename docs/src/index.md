@@ -33,7 +33,6 @@ Or, when possible, represent your “difficult” distribution as a mixture of s
 !!! note
     [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) *currently* does not allow `MixtureModel` to both have discrete and continuous components[^2].
 
-[^1]: Have a look at the [Benchmark section](@ref Benchmarks).
 [^2]: Rain is a good example of a mixture having both a discrete (`Delta` distribution in `0`) and continuous (`Exponential`, `Gamma`, ...) component.
 
 ## Algorithms
@@ -56,8 +55,8 @@ StochasticEM
     See [Instance vs Type version](@ref InstanceVType) section for more context.
 
 ```@docs
-fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; kwargs...)
-fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
+fit_mle(mix::Distributions.MixtureModel, y::AbstractVecOrMat, weights...; kwargs...)
+fit_mle(mix::AbstractArray{<:Distributions.MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
 ```
 
 ## Utilities
@@ -71,13 +70,37 @@ predict_proba
 
 I opened two PRs, [PR#1670](https://github.com/JuliaStats/Distributions.jl/pull/1670) and [PR#1676](https://github.com/JuliaStats/Distributions.jl/pull/1676) to add these methods.
 
+The "instance" version of `fit_mle` allows passing a distribution instance (e.g., `Normal(0,1)`) instead of a type (e.g., `Normal`). This is required for `MixtureModel` and `ProductDistribution` support.
+
+```@docs
+fit_mle(g::D, args...) where {D<:Distribution}
+```
+
 ```@docs
 fit_mle(g::Product, x::AbstractMatrix, args...)
 ```
 
 ```@docs
+fit_mle(dists::Distributions.VectorOfUnivariateDistribution, x::AbstractMatrix{<:Real}, args...)
+```
+
+```@docs
 fit_mle(::Type{<:Dirac}, x::AbstractArray{T}, w::AbstractArray{Float64}) where {T<:Real}
 fit_mle(::Type{<:Laplace}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
+fit_mle(::Type{<:Uniform}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
+```
+
+## Low-level API
+
+The following functions implement the inner loop of the EM algorithms. They can be extended to support custom behavior.
+
+```@docs
+fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, method::ClassicEM)
+fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, method::StochasticEM)
+```
+
+```@docs
+ExpectationMaximization.M_step!
 ```
 
 ## Index
