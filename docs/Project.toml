@@ -14,6 +14,7 @@ ExpectationMaximization = {path = ".."}
 
 [compat]
 CSV = "0.10.16"
+DataFrames = "1.8.2"
 Distributions = "0.25.125"
 Documenter = "1"
 ExpectationMaximization = "0.3"

@@ -14,3 +14,16 @@ StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [sources]
 ExpectationMaximization = {path = ".."}
+
+[compat]
+BenchmarkTools = "1.8.0"
+CondaPkg = "0.2.36"
+Distributions = "0.25.125"
+ExpectationMaximization = "0.2.4"
+GaussianMixtures = "0.3.14"
+LaTeXStrings = "1.4.0"
+MLDatasets = "0.7.21"
+PythonCall = "0.9.34"
+RCall = "0.14.13"
+StableRNGs = "1.0.4"
+StatsPlots = "0.15.8"
