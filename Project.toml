@@ -4,7 +4,7 @@ version = "0.3.0"
 authors = ["David Métivier <david.metivier@inrae.fr> and contributors"]
 
 [workspace]
-projects = ["test", "docs", "benchmarks"]
+projects = ["test", "docs", "benchmark"]
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
