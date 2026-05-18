@@ -3,6 +3,7 @@ using Distributions
 using Distributions: params
 using Test
 using StableRNGs, Random
+using LinearAlgebra: I
 
 @testset "Univariate continuous Mixture Exponential + Gamma" begin
     rng = StableRNG(123)
