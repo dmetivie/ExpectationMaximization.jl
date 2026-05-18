@@ -4,6 +4,7 @@ using Distributions: params
 using Test
 using StableRNGs, Random
 using LinearAlgebra: I
+using MLDatasets: MNIST
 
 @testset "Univariate continuous Mixture Exponential + Gamma" begin
     rng = StableRNG(123)
@@ -440,6 +441,26 @@ end
     z_true = [pdf(D₁, y[:, i]) >= pdf(D₂, y[:, i]) ? 1 : 2 for i in 1:N]
     ẑ = predict(mix, y)
     @test count(ẑ .== z_true) / N > 0.99  # well-separated clusters → near-perfect prediction
+end
+
+@testset "MNIST Bernoulli Mixture (ClassicEM and StochasticEM)" begin
+    binarify(x) = x != 0 ? true : false
+    dataset = MNIST(:train)
+    X, y = dataset[1:10000]
+    Xb = binarify.(reshape(X, (28^2, size(X, 3))))
+    id = [findall(y .∈ i) for i in 0:9]
+    dist_guess = [product_distribution(Bernoulli.(mean(Xb[:, l] for l in id[i]))) for i in eachindex(id)]
+    α = fill(1 / 10, 10)
+    mix_guess = MixtureModel(dist_guess, α)
+
+    # ClassicEM: check it runs and loglikelihood is non-decreasing
+    mix_mle, hist = fit_mle(mix_guess, Xb; infos=true, robust=true, maxiter=20, method=ClassicEM())
+    @test hist["iterations"] <= 20
+    @test all(diff(hist["logtots"]) .>= -1e-8)
+
+    # StochasticEM: just check it runs
+    mix_mle_s, hist_s = fit_mle(mix_guess, Xb; infos=true, robust=true, maxiter=20, method=StochasticEM(StableRNG(1)))
+    @test hist_s["iterations"] <= 20
 end
 
 # @btime ExpectationMaximization.fit_mle(dist_ini, $(data_with_mix), atol=1e-3, maxiter=1000)
