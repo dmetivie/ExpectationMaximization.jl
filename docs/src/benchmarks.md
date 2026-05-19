@@ -9,7 +9,7 @@ A key distinction of `ExpectationMaximization.jl` is its **genericity**: it work
 
 | Package | Language | Gaussian only? | Notes |
 |---|---|---|---|
-| [`Sklearn`](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html) | Python | **Yes** | Hardcoded Gaussian |
+| [`Sklearn`](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html) | Python | **Yes** | Hardcoded Gaussian[^2] |
 | [`mixtools`](https://cran.r-project.org/web/packages/mixtools/index.html) | R | Mostly | Supports some other families but not extensible |
 | [`mixem`](https://mixem.readthedocs.io/en/latest/index.html) | Python | Mostly | Numerically fragile[^3] |
 | [`GaussianMixtures.jl`](https://github.com/davidavdav/GaussianMixtures.jl) | Julia | **Yes** | Hardcoded Gaussian |
