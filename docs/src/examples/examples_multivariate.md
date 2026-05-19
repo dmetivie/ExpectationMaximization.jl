@@ -81,9 +81,13 @@ using MLDatasets: MNIST
 binarify(x) = x != 0 ? true : false
 
 dataset = MNIST(:train)
+````
+
+````@example examples_multivariate
 X, y = dataset[:]
 Xb = binarify.(reshape(X, (28^2, size(X, 3))))
-id = [findall(y .∈ i) for i in 0:9]
+id = [findall(y .∈ i) for i in 0:9];
+nothing #hide
 ````
 
 As initial guess, we can use the mean of each class as the parameter of the Bernoulli distribution for each component of the mixture.
@@ -92,13 +96,15 @@ This is of course a very informed guess to help the EM algorithm to converge tow
 ````@example examples_multivariate
 dist_guess = [product_distribution(Bernoulli.(mean(Xb[:, l] for l in id[i]))) for i in eachindex(id)]
 α = fill(1 / 10, 10)
-mix_guess = MixtureModel(dist_guess, α)
+mix_guess = MixtureModel(dist_guess, α);
+nothing #hide
 ````
 
 Now we can fit the model with the EM algorithm.
 
 ````@example examples_multivariate
-@time mix_mle, info = fit_mle(mix_guess, Xb, infos=true, display=:iter, robust=true)
+@time mix_mle, info = fit_mle(mix_guess, Xb, infos=true, display=:iter, robust=true, maxiter=5);
+info
 ````
 
 We plot the resulting fitted model.
@@ -140,12 +146,15 @@ N = 2_000
 D₁ = MvNormal(θ₁, Σ₁)
 D₂ = MvNormal(θ₂, Σ₂)
 mix_true = MixtureModel([D₁, D₂], [β, 1 - β])
+````
 
+````@example examples_multivariate
 y = rand(mix_true, N)
 
 D₁guess = MvNormal([0.2, 1], [1 0.6; 0.6 1])
 D₂guess = MvNormal([1, 0.5], [1 0.2; 0.2 1])
-mix_guess = MixtureModel([D₁guess, D₂guess], [0.4, 0.6])
+mix_guess = MixtureModel([D₁guess, D₂guess], [0.4, 0.6]);
+nothing #hide
 ````
 
 Now we can fit the model with the EM algorithm.

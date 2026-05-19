@@ -1,4 +1,4 @@
-# Comparison with other packages
+# [Comparison with other packages](@id Benchmarks) 
 
 This benchmark was inspired by [this post](https://floswald.github.io/post/em-benchmarks/).
 The full benchmark code is available as a [Jupyter notebook](https://github.com/dmetivie/Pluto_export/blob/main/jupyter/benchmark_EM/benchmark_v2_K2_unidim.ipynb) and [here](https://github.com/dmetivie/ExpectationMaximization.jl/tree/master/benchmark/benchmark_v2_K2_unidim.jl).
@@ -24,15 +24,16 @@ No heavy programming tricks are used. The performance comes from standard Julia 
 - **E-step**: pre-allocated memory, `@views`, type-stable code, and `logsumexp!` from `LogExpFunctions.jl`.
 - **M-step**: delegates to `fit_mle` from `Distributions.jl`, which is well-optimized for each distribution (e.g., see the Multivariate Normal [implementation](https://github.com/JuliaStats/Distributions.jl/blob/aad64af36e83f9a191de34f497e584943ffa84e5/src/multivariate/mvnormal.jl#L419)).
 
-Many more optimizations are possible, however, I'd like to keep the code as simple and readable as possible for now. 
+!!! note "Clean Julia code"
+    Many more optimizations are possible, however, I'd like to keep the code as simple and readable as possible.
 
 ## Results
 
-![timing_K_2](https://github.com/dmetivie/ExpectationMaximization.jl/blob/master/benchmark/timing_K_2.svg)
+![timing_K_2](https://raw.githubusercontent.com/dmetivie/ExpectationMaximization.jl/refs/heads/master/benchmark/timing_K_2.svg)
 
 Or the ratio view:
 
-![timing_K_2_ratio](https://github.com/dmetivie/ExpectationMaximization.jl/blob/master/benchmark/timing_K_2_ratio.svg)
+![timing_K_2_ratio](https://raw.githubusercontent.com/dmetivie/ExpectationMaximization.jl/refs/heads/master/benchmark/timing_K_2_ratio.svg)
 
 **Conclusion: for Gaussian mixtures, `ExpectationMaximization.jl` is about 4× faster than `Sklearn` (Python) and 7× faster than `mixtools` (R), while being only slightly slower than the Gaussian-specialized `GaussianMixtures.jl`. Crucially, unlike all competing packages, `ExpectationMaximization.jl` handles arbitrary mixture distributions out of the box.**
 

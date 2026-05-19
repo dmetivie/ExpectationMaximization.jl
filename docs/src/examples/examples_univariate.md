@@ -32,8 +32,11 @@ N = 5_000
 a = 2
 
 mix_true = MixtureModel([Laplace(μ, θ₁), Normal(α, θ₂), Exponential(a)], [β / 2, 1 - β, β / 2])
+````
 
-# Components of the mixture
+Components of the mixture
+
+````@example examples_univariate
 begin
     plot(mix_true, label=["Laplace" "Normal" "Exponential"])
     ylabel!("Log PDF", yaxis=:log10)
@@ -49,7 +52,8 @@ y = rand(mix_true, N)
 We specify an initial condition for the EM fit.
 
 ````@example examples_univariate
-mix_guess = MixtureModel([Laplace(-1, 1), Normal(2, 1), Exponential(3)], [1 / 3, 1 / 3, 1 / 3])
+mix_guess = MixtureModel([Laplace(-1, 1), Normal(2, 1), Exponential(3)], [1 / 3, 1 / 3, 1 / 3]);
+nothing #hide
 ````
 
 Fit Classic EM
@@ -62,7 +66,11 @@ Fit Stochastic EM
 
 ````@example examples_univariate
 mix_mle_S, hist_S = fit_mle(mix_guess, y; display=:none, atol=1e-3, robust=false, infos=true, method=StochasticEM())
+````
 
+Plot the results
+
+````@example examples_univariate
 begin
     x = -20:0.1:20
     pmix = plot(x, pdf.(mix_true, x), label="True", ylabel="PDF")

@@ -93,7 +93,7 @@ mix_guess = MixtureModel(dist_guess, α);
 md"""
 Now we can fit the model with the EM algorithm.
 """
-@time mix_mle, info = fit_mle(mix_guess, Xb, infos=true, display=:iter, robust=true);
+@time mix_mle, info = fit_mle(mix_guess, Xb, infos=true, display=:iter, robust=true, maxiter=5);
 info
 
 md"""
