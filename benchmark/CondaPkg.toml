@@ -1,0 +1,6 @@
+
+[deps.scikit-learn]
+channel = "conda-forge"
+
+[deps.numpy]
+channel = "conda-forge"

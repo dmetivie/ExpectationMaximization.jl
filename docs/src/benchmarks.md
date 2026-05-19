@@ -1,39 +1,48 @@
-# Benchmarks
+# Comparison with other packages
 
-I was inspired by [this benchmark](https://floswald.github.io/post/em-benchmarks/).
-I am not too sure how to do 100% fair comparisons across languages[^1].
-There is a small overhead for using `PythonCall.jl` and `RCall.jl`. I checked that it was small in my experimentation (~ few milliseconds?).
-Here is the [Jupyter notebook of the benchmark](https://github.com/dmetivie/Pluto_export/blob/main/jupyter/benchmark_EM/benchmark_v2_K2_unidim.ipynb).
+This benchmark was inspired by [this post](https://floswald.github.io/post/em-benchmarks/).
+The full benchmark code is available as a [Jupyter notebook](https://github.com/dmetivie/Pluto_export/blob/main/jupyter/benchmark_EM/benchmark_v2_K2_unidim.ipynb) and [here](https://github.com/dmetivie/ExpectationMaximization.jl/tree/master/benchmark/benchmark_v2_K2_unidim.jl).
 
-I test only the Gaussian Mixture case, since it is the most common type of mixture (remember that this package allows plenty of other mixtures).
+## Scope and limitations of competing packages
 
-In the code, I did not use (too much) fancy programming tricks, the speed only comes mostly from Julia usual performance tips:
+A key distinction of `ExpectationMaximization.jl` is its **genericity**: it works with any mixture of distributions supported by `Distributions.jl` (univariate, multivariate, continuous, discrete, or custom), without any modification to the core algorithm. The competing packages benchmarked here are, in contrast, largely restricted to Gaussian mixtures:
 
-- E-step: Pre-allocating memory, using `@views`, type-stable code (could be improved here) + the package `LogExpFunctions.jl` for `logsumexp!` function.
-- M-step: `fit_mle` for each distribution coming from the `Distributions.jl` package. In principle, this should be quite fast. For example, look at the Multivariate Normal [code](https://github.com/JuliaStats/Distributions.jl/blob/aad64af36e83f9a191de34f497e584943ffa84e5/src/multivariate/mvnormal.jl#L419).
+| Package | Language | Gaussian only? | Notes |
+|---|---|---|---|
+| [`Sklearn`](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html) | Python | **Yes** | Hardcoded Gaussian; opinionated API[^2] |
+| [`mixtools`](https://cran.r-project.org/web/packages/mixtools/index.html) | R | Mostly | Supports some other families but not extensible |
+| [`mixem`](https://mixem.readthedocs.io/en/latest/index.html) | Python | Mostly | Numerically fragile[^3]; not actively maintained |
+| [`GaussianMixtures.jl`](https://github.com/davidavdav/GaussianMixtures.jl) | Julia | **Yes** | Highly optimized but Gaussian-specific |
+| `ExpectationMaximization.jl` | Julia | **No** | Any `Distributions.jl` distribution |
 
-## Univariate Gaussian mixture with 2 components
+The benchmark below only tests the **Gaussian mixture** case (the most common), which is deliberately the strongest case for the specialized packages. Despite this, `ExpectationMaximization.jl` remains highly competitive.
 
-I compare with [Sklearn.py](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html#sklearn.mixture.GaussianMixture)[^2], [mixtool.R](https://cran.r-project.org/web/packages/mixtools/index.html), [mixem.py](https://mixem.readthedocs.io/en/latest/index.html)[^3].
-I wanted to try [mclust](https://cloud.r-project.org/web/packages/mclust/vignettes/mclust.html), but I did not manage to specify initial conditions.
+## Why is `ExpectationMaximization.jl` fast?
 
-Overall, [mixtool.R](https://cran.r-project.org/web/packages/mixtools/index.html) and [mixem.py](https://mixem.readthedocs.io/en/latest/index.html) were constructed in a similar spirit as this package, making them easy to use for me. [Sklearn.py](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html#sklearn.mixture.GaussianMixture) is built to match the Sklearn format (all in one). `GaussianMixturesModel.jl` is built with a similar vibe.
+No heavy programming tricks are used. The performance comes from standard Julia best practices:
 
-If you have comments to improve these benchmarks, they are welcome.
+- **E-step**: pre-allocated memory, `@views`, type-stable code, and `logsumexp!` from `LogExpFunctions.jl`.
+- **M-step**: delegates to `fit_mle` from `Distributions.jl`, which is well-optimized for each distribution (e.g., see the Multivariate Normal [implementation](https://github.com/JuliaStats/Distributions.jl/blob/aad64af36e83f9a191de34f497e584943ffa84e5/src/multivariate/mvnormal.jl#L419)).
 
-You can find the benchmark code [here](https://github.com/dmetivie/ExpectationMaximization.jl/tree/master/benchmarks/benchmark_v1_K2_unidim.jl).
+Many more optimizations are possible, however, I'd like to keep the code as simple and readable as possible for now. 
 
-![timing_K_2](https://github.com/user-attachments/assets/d0eed38a-a66e-4b7e-8e4d-de3782190343)
+## Results
+
+![timing_K_2](https://github.com/dmetivie/ExpectationMaximization.jl/blob/master/benchmark/timing_K_2.svg)
 
 Or the ratio view:
 
-![timing_K_2_ratio](https://github.com/user-attachments/assets/3d174899-c50c-4f71-8dbb-4a9a0a238713)
-**Conclusion: for Gaussian mixtures, `ExpectationMaximization.jl` is about 4 times faster than `Python` `Sklearn` and 7 times faster than `R` `mixtools` implementations** and slightly slower than the specialized Julia package `GaussianMixturesModel.jl`.
+![timing_K_2_ratio](https://github.com/dmetivie/ExpectationMaximization.jl/blob/master/benchmark/timing_K_2_ratio.svg)
 
-[^1]: Note that `@btime` with `RCall.jl` and `PythonCall.jl` might produce a small-time overhead compared to the pure R/Python time; see [here for example](https://discourse.julialang.org/t/benchmarking-julia-vs-python-vs-r-with-pycall-and-rcall/37308).
-I did compare with `R` `microbenchmark` and Python `timeit` and they produced very similar timing, but in my experience `BenchmarkTools.jl` is smarter and simpler to use, i.e., it will figure out the number of repetitions to do based on the run.
+**Conclusion: for Gaussian mixtures, `ExpectationMaximization.jl` is about 4× faster than `Sklearn` (Python) and 7× faster than `mixtools` (R), while being only slightly slower than the Gaussian-specialized `GaussianMixtures.jl`. Crucially, unlike all competing packages, `ExpectationMaximization.jl` handles arbitrary mixture distributions out of the box.**
 
-[^2]: There is a suspect trigger warning regarding K-means which I do not want to use here. I asked a question [here](https://github.com/scikit-learn/scikit-learn/discussions/25916). It led to [this issue](https://github.com/scikit-learn/scikit-learn/issues/26015) and [that PR](https://github.com/scikit-learn/scikit-learn/pull/26021). It turns out that even if initial conditions were provided, the K-mean was still computed. However, to this day (23-11-29) with `scikit-learn 1.3.2` it still gets the warning. Maybe it will be in the next release? I also noted this recent [PR](https://github.com/scikit-learn/scikit-learn/pull/26416).
-Last, the step-by-step likelihood of `Sklearn` is not the same as outputted by `ExpectationMaximization.jl` and [mixtool.R](https://cran.r-project.org/web/packages/mixtools/index.html) (both agree), so I am a bit suspicious.
+If you have comments to improve these benchmarks, they are welcome.
 
-[^3]: It overflows very quickly for $n>500$ or so. I think it is because of the implementation of [`logsumexp`](https://github.com/sseemayer/mixem/blob/2ffd990b22a12d48313340b427feae73bcf6062d/mixem/em.py#L5). So I eventually did not include the result in the benchmark.
+!!! note "Benchmarking methodology"
+    Cross-language comparisons are inherently imperfect[^1]. `PythonCall.jl` and `RCall.jl` introduce a small overhead (~few milliseconds), which was verified to be negligible here.
+
+[^1]: `@btime` with `RCall.jl` and `PythonCall.jl` may add a small overhead; see [this discussion](https://discourse.julialang.org/t/benchmarking-julia-vs-python-vs-r-with-pycall-and-rcall/37308). Timings were cross-checked against `R` `microbenchmark` and Python `timeit`, which gave consistent results. `BenchmarkTools.jl` automatically determines the number of repetitions needed for a reliable estimate.
+
+[^2]: `Sklearn`'s `GaussianMixture` used to run K-means initialization even when initial conditions are explicitly provided — see [this discussion](https://github.com/scikit-learn/scikit-learn/discussions/25916), [issue](https://github.com/scikit-learn/scikit-learn/issues/26015), and [PR](https://github.com/scikit-learn/scikit-learn/pull/26021). I should be fix by now.
+
+[^3]: `mixem` overflows for $n \gtrsim 500$ due to a fragile [`logsumexp` implementation](https://github.com/sseemayer/mixem/blob/2ffd990b22a12d48313340b427feae73bcf6062d/mixem/em.py#L5) and was excluded from the benchmark.
