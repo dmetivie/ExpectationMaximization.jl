@@ -3,7 +3,7 @@ module ExpectationMaximization
 using ArgCheck
 using Distributions
 using Distributions: ArrayOfUnivariateDistribution, VectorOfUnivariateDistribution # for product distributions
-using LogExpFunctions: logsumexp!, logsumexp
+using LogExpFunctions: logsumexp!
 using StatsBase: weights
 using Random # to add @kwdef 
 
