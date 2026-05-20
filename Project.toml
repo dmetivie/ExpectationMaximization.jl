@@ -1,6 +1,6 @@
 name = "ExpectationMaximization"
 uuid = "e1fe09cc-5134-44c2-a941-50f4cd97986a"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["David Métivier <david.metivier@inrae.fr> and contributors"]
 
 [workspace]
