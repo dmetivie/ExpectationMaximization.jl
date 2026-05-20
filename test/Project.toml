@@ -13,4 +13,5 @@ ExpectationMaximization = {path = ".."}
 [compat]
 Distributions = "0.25.125"
 ExpectationMaximization = "0.3"
+MLDatasets = "0.7.21"
 StableRNGs = "1.0.4"
