@@ -11,7 +11,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 ExpectationMaximization = {path = ".."}
 
 [compat]
-Distributions = "0.25.125"
+Distributions = "0.25"
 ExpectationMaximization = "0.3"
-MLDatasets = "0.7.21"
-StableRNGs = "1.0.4"
+MLDatasets = "0.7"
+StableRNGs = "1.0"
