@@ -39,14 +39,16 @@ function fit_mle!(
     @argcheck maxiter >= 0
 
     N, K = size_sample(y), length(dists)
-    !isnothing(w) && @argcheck length(w) == N
-    history = Dict("converged" => false, "iterations" => 0, "logtots" => zeros(0))
-
     # Allocate memory for in-place updates
-
     LL = zeros(N, K)
     γ = similar(LL)
     c = zeros(N)
+    
+    !isnothing(w) && @argcheck length(w) == N
+    
+    converged = false
+    iterations = 0
+    logtots = eltype(c)[]
 
     # E-step
     E_step!(LL, c, γ, dists, α, y; robust=robust)
@@ -66,28 +68,28 @@ function fit_mle!(
         logtotp = isnothing(w) ? sum(c) : sum(w[n] * c[n] for n in eachindex(c))
         (display == :iter) && println("Iteration $(it): loglikelihood = ", logtotp)
 
-        push!(history["logtots"], logtotp)
-        history["iterations"] += 1
+        push!(logtots, logtotp)
+        iterations += 1
 
         if abs(logtotp - logtot) < atol || (rtol !== nothing && abs(logtotp - logtot) < rtol * (abs(logtot) + abs(logtotp)) / 2)
             (display in [:iter, :final]) &&
                 println("EM converged in ", it, " iterations, final loglikelihood = ", logtotp)
-            history["converged"] = true
+            converged = true
             break
         end
 
         logtot = logtotp
     end
 
-    if !history["converged"]
+    if !converged
         if display in [:iter, :final]
             println(
-                "EM has not converged after $(history["iterations"]) iterations, final loglikelihood = $logtot",
+                "EM has not converged after $iterations iterations, final loglikelihood = $logtot",
             )
         end
     end
 
-    return history
+    return Dict("converged" => converged, "iterations" => iterations, "logtots" => logtots)
 end
 
 """
