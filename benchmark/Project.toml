@@ -21,7 +21,7 @@ ExpectationMaximization = {path = ".."}
 BenchmarkTools = "1.8.0"
 CondaPkg = "0.2.36"
 Distributions = "0.25.125"
-ExpectationMaximization = "0.3.0"
+ExpectationMaximization = "0.3.1"
 GaussianMixtures = "0.3.14"
 LaTeXStrings = "1.4.0"
 MLDatasets = "0.7.21"
