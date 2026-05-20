@@ -46,11 +46,11 @@ function fit_mle!(
 
     N, K = size_sample(y), length(dists)
     # Allocate memory for in-place updates
-
     LL = zeros(N, K)
     γ = similar(LL)
     c = zeros(N)
     ẑ = zeros(Int, N)
+    γ_n = zeros(K)
     
     !isnothing(w) && @argcheck length(w) == N
     
@@ -67,7 +67,10 @@ function fit_mle!(
 
     for it = 1:maxiter
         # S-step
-        ẑ[:] .= [rand(method.rng, Categorical(ℙ...)) for ℙ in eachrow(γ)]
+        for (i, ℙ) in enumerate(eachrow(γ))
+            γ_n .= ℙ # Categorical do not accept subarray
+            ẑ[i] = rand(method.rng, Categorical(γ_n))
+        end
         cat = [findall(ẑ .== k) for k = 1:K]
 
         # M-step
