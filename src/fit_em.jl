@@ -125,7 +125,7 @@ function E_step!(
     robust=false,
 ) where {T<:AbstractFloat}
     # evaluate likelihood for each component k, column-by-column (column-major ✓)
-    @views for k in eachindex(dists)
+    for k in eachindex(dists)
         @. LL[:, k] = log(α[k]) + logpdf(dists[k], y)
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
