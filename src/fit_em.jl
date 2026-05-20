@@ -131,7 +131,7 @@ function E_step!(
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
     logsumexp!(c, LL) # c[:] = logsumexp(LL, dims=2)
-    γ[:, :] .= exp.(LL .- c)
+    @. γ = exp(LL - c)
 end
 
 function E_step!(
@@ -153,5 +153,5 @@ function E_step!(
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
     logsumexp!(c, LL) # c[:] = logsumexp(LL, dims=2)
-    γ[:, :] = exp.(LL .- c)
+    @. γ = exp(LL - c)
 end
