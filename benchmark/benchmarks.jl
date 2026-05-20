@@ -17,16 +17,19 @@ let
     mix_true = MixtureModel([Laplace(-1.0, 10.0), Normal(0.5, 0.8)], [0.3, 0.7])
     mix_guess = MixtureModel([Laplace(-2, 5.0), Normal(1.0, 1.0)], [0.4, 0.6])
 
-    for method_label in ["ClassicEM", "StochasticEM"]
-        SUITE["univariate"][method_label] = BenchmarkGroup()
-        method = method_label == "ClassicEM" ? ClassicEM() : StochasticEM(StableRNG(1))
-        for N in [1_000, 10_000, 100_000]
-            y = rand(StableRNG(1), mix_true, N)
-            SUITE["univariate"][method_label][N] = @benchmarkable(
-                fit_mle($mix_guess, $y; method=$method, maxiter=100, atol=1e-4),
-                evals = 1
-            )
-        end
+    SUITE["univariate"]["ClassicEM"] = BenchmarkGroup()
+    SUITE["univariate"]["StochasticEM"] = BenchmarkGroup()
+    for N in [1_000, 10_000, 100_000]
+        y = rand(StableRNG(1), mix_true, N)
+        SUITE["univariate"]["ClassicEM"][N] = @benchmarkable(
+            fit_mle($mix_guess, $y; method=ClassicEM(), maxiter=100, atol=1e-4),
+            evals = 1
+        )
+        SUITE["univariate"]["StochasticEM"][N] = @benchmarkable(
+            fit_mle($mix_guess, $y; method=m, maxiter=100, atol=1e-4),
+            setup = (m = StochasticEM(StableRNG(1))),
+            evals = 1
+        )
     end
 end
 
@@ -38,16 +41,20 @@ let
     mix_true = MixtureModel([Laplace(-1.0, 5.0), Normal(0.5, 0.8), Exponential(2.0)], [0.15, 0.7, 0.15])
     mix_guess = MixtureModel([Laplace(-1.0, 1.0), Normal(2.0, 1.0), Exponential(3.0)], [1 / 3, 1 / 3, 1 / 3])
 
-    for method_label in ["StochasticEM"]
-        SUITE["univariate_K3"][method_label] = BenchmarkGroup()
-        method = method_label == "ClassicEM" ? ClassicEM() : StochasticEM(StableRNG(1))
-        for N in [1_000, 10_000, 100_000]
-            y = rand(StableRNG(1), mix_true, N)
-            SUITE["univariate_K3"][method_label][N] = @benchmarkable(
-                fit_mle($mix_guess, $y; method=$method, maxiter=100, atol=1e-4), 
-                evals = 1
-            )
-        end
+    SUITE["univariate_K3"]["ClassicEM"] = BenchmarkGroup()
+    SUITE["univariate_K3"]["StochasticEM"] = BenchmarkGroup()
+    for N in [1_000, 10_000, 100_000]
+        y = rand(StableRNG(1), mix_true, N)
+        SUITE["univariate_K3"]["StochasticEM"][N] = @benchmarkable(
+            fit_mle($mix_guess, $y; method=m, maxiter=100, atol=1e-4),
+            setup = (m = StochasticEM(StableRNG(1))),
+            evals = 1
+        )
+        SUITE["univariate_K3"]["ClassicEM"][N] = @benchmarkable(
+            fit_mle($mix_guess, $y; method=m, maxiter=100, atol=1e-4),
+            setup = (m = ClassicEM()),
+            evals = 1
+        )
     end
 end
 
@@ -63,13 +70,15 @@ let
         y = rand(StableRNG(1), mix_true, N)
 
         SUITE["univariate_Kvar"][K] = BenchmarkGroup()
-        for method_label in ["ClassicEM", "StochasticEM"]
-            method = method_label == "ClassicEM" ? ClassicEM() : StochasticEM(StableRNG(1))
-            SUITE["univariate_Kvar"][K][method_label] = @benchmarkable(
-                fit_mle($mix_guess, $y; method=$method, maxiter=100, atol=1e-4),
-                evals = 1
-            )
-        end
+        SUITE["univariate_Kvar"][K]["ClassicEM"] = @benchmarkable(
+            fit_mle($mix_guess, $y; method=ClassicEM(), maxiter=100, atol=1e-4),
+            evals = 1
+        )
+        SUITE["univariate_Kvar"][K]["StochasticEM"] = @benchmarkable(
+            fit_mle($mix_guess, $y; method=m, maxiter=100, atol=1e-4),
+            setup = (m = StochasticEM(StableRNG(1))),
+            evals = 1
+        )
     end
 end
 
@@ -123,11 +132,13 @@ let
     α = fill(1 / 10, 10)
     mix_guess = MixtureModel(dist_guess, α)
 
-    for method_label in ["ClassicEM", "StochasticEM"]
-        method = method_label == "ClassicEM" ? ClassicEM() : StochasticEM(StableRNG(1))
-        SUITE["mnist_bernoulli"][method_label] = @benchmarkable(
-            fit_mle($mix_guess, $Xb; method=$method, robust=true, maxiter=20),
-            evals = 1
-        )
-    end
+    SUITE["mnist_bernoulli"]["ClassicEM"] = @benchmarkable(
+        fit_mle($mix_guess, $Xb; method=ClassicEM(), robust=true, maxiter=20),
+        evals = 1
+    )
+    SUITE["mnist_bernoulli"]["StochasticEM"] = @benchmarkable(
+        fit_mle($mix_guess, $Xb; method=m, robust=true, maxiter=20),
+        setup = (m = StochasticEM(StableRNG(1))),
+        evals = 1
+    )
 end
