@@ -124,9 +124,9 @@ function E_step!(
     y::AbstractVector;
     robust=false,
 ) where {T<:AbstractFloat}
-    # evaluate likelihood for each type k
-    for k in eachindex(dists)
-        LL[:, k] .= log(α[k]) .+ logpdf.(dists[k], y)
+    # evaluate likelihood for each component k, column-by-column (column-major ✓)
+    @views for k in eachindex(dists)
+        @. LL[:, k] = log(α[k]) + logpdf(dists[k], y)
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
     # get posterior of each category
@@ -143,11 +143,11 @@ function E_step!(
     y::AbstractMatrix;
     robust=false,
 )
-    # evaluate likelihood for each type k
+    # evaluate likelihood for each component k, column-by-column (column-major ✓)
     @views for k in eachindex(dists)
-        LL[:, k] .= log(α[k])
+        lak = log(α[k])
         for n in axes(y, 2)
-            LL[n, k] += logpdf(dists[k], y[:, n])
+            LL[n, k] = lak + logpdf(dists[k], y[:, n])
         end
     end
     robust && replace!(LL, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
