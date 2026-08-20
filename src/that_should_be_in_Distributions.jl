@@ -4,21 +4,19 @@
 ## * Instance version of `fit_mle` * ##
 
 """
-Now "instance" version of `fit_mle` is supported (in addition of the current "type" version). 
+In EM.jl the "instance" version of `fit_mle` is supported (in addition of the current "type" version). 
+Note this is not supported in `Distributions.jl`.
 Example: `fit_mle(Bernoulli(0.2), x)` is accepted in addition of `fit_mle(Bernoulli, x)` this allows compatibility with how `fit_mle(g::Product)` and `fit_mle(g::MixtureModel)` are written.
-#! Not 100% sure it will not cause any issuses or conflic!
-#! There might be another way to do with the type something like:
-#! https://discourse.julialang.org/t/ann-copulas-jl-a-fully-distributions-jl-compliant-copula-package/76544/12
-#! MyMarginals = Tuple{LogNormal,Pareto,Gamma,Normal};
-#! fitted_model = fit(SklarDist{MyCop,MyMarginals},data)
-#! and initial parameters as kwargs?
 """
 function fit_mle(g::D, args...) where {D<:Distribution}
-    fit_mle(typeof(g), args...)
+    fit_mle(typeof(g).name.wrapper, args...)
 end
 
 fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Binomial} = fit_mle(T, suffstats(T, ntrials(d), x))
-fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Categorical} = fit_mle(T, ncategories(d), x)
+fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Categorical} =
+    Categorical(probs(fit_mle(T, ncategories(d), x)))
+fit_mle(d::T, x::AbstractArray{<:Integer}, w::AbstractArray{<:Real}) where {T<:Categorical} =
+    Categorical(probs(fit_mle(T, ncategories(d), x, w)))
 
 ## * `fit_mle` for `product_distribution`
 
