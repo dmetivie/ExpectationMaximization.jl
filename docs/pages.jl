@@ -7,7 +7,8 @@ SUBSECTION_EXAMPLES = [
 
 pages = [
     "Home" => "index.md",
-    "📖 Examples" => SUBSECTION_EXAMPLES,
+    "Algorithms & Methods" => "algo.md",
+    "Examples" => SUBSECTION_EXAMPLES,
     "biblio.md",
     "benchmarks.md",
     "fit_mle.md",

@@ -1,7 +1,40 @@
-# ExpectationMaximization.jl
+```@raw html
+---
+layout: home
+
+hero:
+    name: ExpectationMaximization.jl
+    text: Expectation Maximization algorithm for Julia mixture models
+    tagline: One algorithm -readable and fast- working for all mixture models.
+    actions:
+      - theme: brand
+        text: Explore the examples
+        link: /examples/examples_multivariate/
+      - theme: brand
+        text: Explore the algorithms
+        link: /algo/
+      - theme: alt
+        text: View on GitHub
+        link: https://github.com/dmetivie/ExpectationMaximization.jl
+    image:
+      src: /logo.svg
+      alt: ExpectationMaximization.jl
+
+features:
+  - icon: 🔄
+    title: Classic and Stochastic EM
+    details: Choose between the classical or stochastic version of the EM, with convergence controls and optional robust likelihood handling. 
+  - icon: 🧩
+    title: Broad mixture support
+    details: Fit univariate, multivariate, discrete, continuous, nested, and user-defined distributions.
+  - icon: ⚡
+    title: Generic Julia design
+    details: Build on `Distributions.jl` and multiple dispatch for concise and readable code that remains flexible and fast.
+---
+```
 
 This package provides a simple implementation of the Expectation Maximization (EM) algorithm used to fit mixture models.
-Due to [Julia](https://julialang.org/)'s amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) system, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast! Take a look at the [Benchmark section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/benchmarks/).
+Due to [Julia](https://julialang.org/)'s amazing [dispatch](https://www.youtube.com/watch?v=kc9HwsxE1OY) system, generic and reusable code spirit, and the [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) package, the code while being very generic is both very expressive and fast! Take a look at the [Benchmark section](@ref Benchmarks).
 
 ## What type of mixtures?
 
@@ -19,6 +52,8 @@ In particular, it works on a lot of mixtures:
 Just define a [`mix::MixtureModel`](https://juliastats.org/Distributions.jl/stable/mixture/) and do `fit_mle(mix, y)` where `y` is your observation array (vector or matrix). That's it! For Stochastic EM, just do `fit_mle(mix, y, method = StochasticEM())`.
 **Take a look at the [Examples](https://dmetivie.github.io/ExpectationMaximization.jl/dev/examples/#Examples) section**.
 
+For a description of the implemented methods, see the [Algorithms and Methods](@ref AlgoMeth) page.
+
 To work, the only requirements are that the components of the mixture `dist ∈ dists = components(mix)` considered (custom or coming from an existing package)
 
 1. Are a subtype of `Distribution` i.e. `dist<:Distribution`.
@@ -35,75 +70,19 @@ Or, when possible, represent your “difficult” distribution as a mixture of s
 
 [^2]: Rain is a good example of a mixture having both a discrete (`Delta` distribution in `0`) and continuous (`Exponential`, `Gamma`, ...) component.
 
-## Algorithms
+### Getting started
 
-So far, the classic EM algorithm and the Stochastic EM are implemented. Look at the [Bibliography section](https://dmetivie.github.io/ExpectationMaximization.jl/dev/biblio) for references.
+```julia
+using Distributions
+using ExpectationMaximization
 
-```@docs
-ClassicEM
+mix = MixtureModel([Exponential(10.0), Gamma(2.0, 5.0)], [0.3, 0.7])
+y = rand(mix, 1_000)
+
+mix_guess = MixtureModel([Exponential(1.0), Gamma(1.0, 1.0)], [0.5, 0.5])
+mix_fit = fit_mle(mix_guess, y)
 ```
 
-```@docs
-StochasticEM
-```
+That's it! The `mix_fit` is now the fitted mixture model.
 
-## Main function
-
-!!! warning
-    To fit the mixture, use the “instance” version of `fit_mle(mix::MixtureModel, ...)` as described below and **NOT** the “Type” version, i.e., `fit_mle(Type{MixtureModel}, ...)`.
-    The provided `mix` is used as the starting point of the EM algorithm.
-    See [Instance vs Type version](@ref InstanceVType) section for more context.
-
-```@docs
-fit_mle(mix::Distributions.MixtureModel, y::AbstractVecOrMat, weights...; kwargs...)
-fit_mle(mix::AbstractArray{<:Distributions.MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, robust=false, infos=false)
-```
-
-## Utilities
-
-```@docs
-predict
-predict_proba
-```
-
-## `fit_mle` methods that should be in `Distribution.jl`
-
-I opened two PRs, [PR#1670](https://github.com/JuliaStats/Distributions.jl/pull/1670) and [PR#1676](https://github.com/JuliaStats/Distributions.jl/pull/1676) to add these methods.
-
-The "instance" version of `fit_mle` allows passing a distribution instance (e.g., `Normal(0,1)`) instead of a type (e.g., `Normal`). This is required for `MixtureModel` and `ProductDistribution` support.
-
-```@docs
-fit_mle(g::D, args...) where {D<:Distribution}
-```
-
-```@docs
-fit_mle(g::Product, x::AbstractMatrix, args...)
-```
-
-```@docs
-fit_mle(dists::Distributions.VectorOfUnivariateDistribution, x::AbstractMatrix{<:Real}, args...)
-```
-
-```@docs
-fit_mle(::Type{<:Dirac}, x::AbstractArray{T}, w::AbstractArray{Float64}) where {T<:Real}
-fit_mle(::Type{<:Laplace}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
-fit_mle(::Type{<:Uniform}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
-```
-
-## Low-level API
-
-The following functions implement the inner loop of the EM algorithms. They can be extended to support custom behavior.
-
-```@docs
-fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, method::ClassicEM)
-fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, method::StochasticEM)
-```
-
-```@docs
-ExpectationMaximization.M_step!
-```
-
-## Index
-
-```@index
-```
+See the [Examples](https://dmetivie.github.io/ExpectationMaximization.jl/dev/examples/#Examples) section for more examples.

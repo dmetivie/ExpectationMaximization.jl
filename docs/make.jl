@@ -1,4 +1,5 @@
 using Documenter, Pkg, Literate
+using DocumenterLandingPage, DocumenterCodeBlocks
 using ExpectationMaximization
 using Distributions
 
@@ -39,6 +40,7 @@ makedocs(
     doctest=false,
     format=fmt,
     pages=pages,
+    plugins = [LandingPage(), CodeBlocks()],
 )
 
 deploydocs(repo="github.com/dmetivie/ExpectationMaximization.jl.git", devbranch="master")
