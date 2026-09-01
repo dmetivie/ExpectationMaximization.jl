@@ -12,6 +12,11 @@ function fit_mle(g::D, args...) where {D<:Distribution}
     fit_mle(typeof(g).name.wrapper, args...)
 end
 
+# specific dispatch for MvNormal as we need to keep the type of the covariance matrix
+fit_mle(g::DiagNormal, args...) = fit_mle(DiagNormal, args...)
+fit_mle(g::IsoNormal, args...) = fit_mle(IsoNormal, args...)
+fit_mle(g::FullNormal, args...) = fit_mle(FullNormal, args...)
+
 fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Binomial} = fit_mle(T, suffstats(T, ntrials(d), x))
 fit_mle(d::T, x::AbstractArray{<:Integer}) where {T<:Categorical} =
     Categorical(probs(fit_mle(T, ncategories(d), x)))
