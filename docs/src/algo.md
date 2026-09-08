@@ -138,13 +138,57 @@ ExpectationMaximization.M_step!
 ### Internals
 
 !!! warning "Not public API"
-    This helper is an implementation detail: it starts with an underscore, it is not exported, and its
-    signature can change in any patch release. It is documented here only because its in-place contract
-    matters when extending the E-step.
+    These helpers are implementation details: they start with an underscore, they are not exported, and
+    their signatures can change in any patch release. They are documented here only because their
+    in-place contracts matter when extending the E-step.
 
 ```@docs
+ExpectationMaximization._loglikelihood_col!
 ExpectationMaximization._softmax_rows!
 ```
+
+## Specialized components
+
+The generic E-step calls `logpdf` once per observation, which is the right thing to do for an arbitrary
+component but leaves a lot on the table for the distributions whose density can be evaluated for a whole
+sample at once. `src/specialized.jl` adds such fast paths for `MvNormal` as extra
+[`ExpectationMaximization._loglikelihood_col!`](@ref) methods. They are selected by dispatch on the
+component type, so nothing in the generic path changes and any component they do not match keeps the
+per-observation fallback; deleting the file would only make the package slower.
+
+Two kernels cover the three covariance shapes:
+
+- **isotropic or diagonal** `Σ`: the Mahalanobis form is a plain weighted sum of squares, evaluated in one
+  pass with no temporary at all.
+- **full** `Σ`: the sample is processed in blocks of `MVNORMAL_BLOCKSIZE` observations, each block centred
+  into a cache-resident `D × MVNORMAL_BLOCKSIZE` buffer and whitened with one in-place `PDMats.whiten!` —
+  a BLAS-3 `trsm` — instead of the one BLAS-2 `trsv` per observation that `logpdf` performs.
+
+Measured speedup over the generic fallback at `N = 10⁵`, `K = 2`, single-threaded:
+
+| `D` | 2 | 10 | 50 | 100 |
+|:--|--:|--:|--:|--:|
+| `FullNormal` | 16.1× | 7.8× | 5.5× | 4.7× |
+| `DiagNormal` | 17.6× | 12.8× | 15.3× | 17.0× |
+| `IsoNormal` | 17.0× | 6.3× | 3.2× | 6.6× |
+
+Allocation at `D = 100`, `N = 10⁵` drops from 185.6 MB to 211 KB for a full covariance, and from 92.8 MB to
+under 2 KB for the other two. The results agree with the generic fallback to one or two units in the last
+place, and the `ZeroMean*` variants are covered for free because the `IsoNormal`/`DiagNormal`/`FullNormal`
+aliases only constrain the covariance and element types.
+
+The same file also adds a `Distributions.fit_mle(::FullNormal, y, w)` method for the M-step. It computes
+exactly the same weighted maximum-likelihood estimate as `Distributions.jl` — the mean is bit-identical and
+the covariance agrees to about `1e-14`, the difference being the order of accumulation — but builds the
+scatter matrix blockwise with `syrk!` into a reused buffer instead of allocating a fresh `D × N` array on
+every call. `DiagNormal` and `IsoNormal` deliberately keep their own fits, which are already cheap and, more
+importantly, preserve the covariance type of the component.
+
+!!! note "Adding your own"
+    This is the intended way to make a particular component fast: add a `_loglikelihood_col!` method (and, if
+    the maximum-likelihood estimate can reuse a buffer, a `fit_mle` method) for your type. The contract is
+    only the value of `LL[n, k]` given in [How the implementation is organised](@ref);
+    everything else, including the `γ`-aliases-`LL` convention, is handled by the generic E-step.
 
 ## Index
 
