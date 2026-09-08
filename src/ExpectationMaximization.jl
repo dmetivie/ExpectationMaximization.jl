@@ -70,6 +70,7 @@ end
 
 include("that_should_be_in_Distributions.jl")
 include("fit_em.jl")
+include("specialized.jl")
 include("classic_em.jl")
 include("stochastic_em.jl")
 
