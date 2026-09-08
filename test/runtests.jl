@@ -589,6 +589,77 @@ end
     @test_throws MethodError fit_mle(mix, y)
 end
 
+@testset "MvNormal E-step kernels match the generic fallback" begin
+    EM = ExpectationMaximization
+    PD = Distributions.PDMats
+    # the generic per-observation fallback, spelled out, as the reference
+    function generic_col!(LLₖ, d, logα, y::AbstractMatrix)
+        @inbounds @views for n in axes(y, 2)
+            LLₖ[n] = logα + logpdf(d, y[:, n])
+        end
+        return LLₖ
+    end
+    mk(kind, D) = begin
+        rng = StableRNG(D + (kind === :full ? 7 : 0))
+        μ = D == 1 ? [0.0] : collect(range(-1, 1, length=D))
+        kind === :full ? (A = randn(rng, D, D); MvNormal(μ, Matrix(A * A' / D + D * I))) :
+        kind === :diag ? MvNormal(μ, PD.PDiagMat(rand(rng, D) .+ 0.5)) :
+        kind === :iso ? MvNormal(μ, PD.ScalMat(D, 1.7)) :
+        kind === :zmfull ? (A = randn(rng, D, D); MvNormal(PD.PDMat(A * A' / D + D * I))) :
+        MvNormal(PD.ScalMat(D, 2.3))
+    end
+
+    for kind in (:full, :diag, :iso, :zmfull, :zmiso), D in (1, 2, 7, 33), N in (1, 255, 256, 257)
+        d = mk(kind, D)
+        y = rand(StableRNG(N + D), d, N)
+        a, b = zeros(N), zeros(N)
+        generic_col!(a, d, log(0.3), y)
+        EM._loglikelihood_col!(b, d, log(0.3), y)
+        @test a ≈ b rtol = 1e-12
+    end
+    # an empty sample must not error
+    @test EM._loglikelihood_col!(Float64[], mk(:full, 3), 0.0, zeros(3, 0)) == Float64[]
+
+    # component types without a kernel must keep the generic fallback
+    generic = which(EM._loglikelihood_col!,
+        Tuple{Vector{Float64},MvNormal{Float64,PD.PDMat{Float64,Matrix{Float64}},Vector{Float64}},
+            Float64,Matrix{Float64}})
+    for d in (product_distribution([Normal(), Gamma(2, 1)]),
+        MvNormalCanon([1.0, 2.0], [1.0, 1.0]),
+        MixtureModel([MvNormal([0.0, 0.0], I(2)), MvNormal([1.0, 1.0], I(2))]))
+        m = which(EM._loglikelihood_col!, Tuple{Vector{Float64},typeof(d),Float64,Matrix{Float64}})
+        @test m != generic                          # not the MvNormal kernel
+        @test occursin("fit_em.jl", String(m.file)) # the generic hook
+    end
+end
+
+@testset "Blocked weighted FullNormal fit matches Distributions" begin
+    PD = Distributions.PDMats
+    for D in (2, 7, 10, 33), N in (255, 256, 257, 2000)
+        rng = StableRNG(D + N)
+        A = randn(rng, D, D)
+        d = MvNormal(collect(range(-1, 1, length=D)), Matrix(A * A' / D + D * I))
+        y = rand(StableRNG(N + D), d, N)
+        w = rand(StableRNG(D), N) .+ 0.1
+        ref, new = fit_mle(FullNormal, y, w), fit_mle(d, y, w)
+        @test mean(new) == mean(ref)                # bit identical
+        @test cov(new) ≈ cov(ref) rtol = 1e-12      # blocked accumulation, so 1-2 ulp
+        @test typeof(new) == typeof(ref)
+    end
+    # DiagNormal and IsoNormal must keep their own fit, and their covariance type
+    y, w = rand(StableRNG(1), 2, 200), rand(StableRNG(2), 200) .+ 0.1
+    @test fit_mle(MvNormal([0.0, 0.0], PD.PDiagMat([2.0, 3.0])), y, w) isa Distributions.DiagNormal
+    @test fit_mle(MvNormal([0.0, 0.0], PD.ScalMat(2, 4.0)), y, w) isa Distributions.IsoNormal
+    # A non-BLAS eltype must not be claimed by the blocked method; it has to fall through to
+    # Distributions, which does not support BigFloat either, but that is its call and not ours.
+    A = randn(StableRNG(3), 2, 2)
+    db = MvNormal([0.0, 0.0], Matrix(A * A' + 2I))
+    @test occursin("specialized.jl",
+        String(which(fit_mle, Tuple{typeof(db),Matrix{Float64},Vector{Float64}}).file))
+    @test !occursin("specialized.jl",
+        String(which(fit_mle, Tuple{typeof(db),Matrix{BigFloat},Vector{BigFloat}}).file))
+end
+
 @testset "MNIST Bernoulli Mixture (ClassicEM and StochasticEM)" begin
     binarify(x) = x != 0 ? true : false
     dataset = MNIST(:train)
