@@ -68,17 +68,17 @@ function _loglikelihood_col!(LLₖ, d::FullNormal{T}, logα, y::AbstractMatrix) 
     return LLₖ
 end
 
-"""
-    fit_mle(d::FullNormal, y::AbstractMatrix, w::AbstractVector)
-
-`Distributions.fit_mle(::Type{FullNormal}, y, w)` allocates its own `D × N` scratch on every call, so
-the M-step throws away one such array per component per iteration (16 MB per call at `D = 10`,
-`N = 2·10⁵`). This accumulates the same scatter matrix blockwise with `syrk!`, reusing a cache
-resident `D × MVNORMAL_BLOCKSIZE` buffer, and produces a bit-identical covariance.
-
-Restricted to a full covariance so that `DiagNormal` and `IsoNormal` keep their own (already cheap)
-fits and, crucially, their covariance type; anything else falls back to `Distributions`.
-"""
+# `fit_mle(d::FullNormal, y::AbstractMatrix, w::AbstractVector)`
+#
+# `Distributions.fit_mle(::Type{FullNormal}, y, w)` allocates its own `D × N` scratch on every call, so
+# the M-step throws away one such array per component per iteration (16 MB per call at `D = 10`,
+# `N = 2·10⁵`). This accumulates the same scatter matrix blockwise with `syrk!`, reusing a cache
+# resident `D × MVNORMAL_BLOCKSIZE` buffer, and produces a bit-identical covariance. It is a plain
+# method of `Distributions.fit_mle`, behaviourally identical to it, so it is documented here rather
+# than in the manual.
+#
+# Restricted to a full covariance so that `DiagNormal` and `IsoNormal` keep their own (already cheap)
+# fits and, crucially, their covariance type; anything else falls back to `Distributions`.
 function fit_mle(
     d::FullNormal{T}, y::AbstractMatrix{T}, w::AbstractVector{T}
 ) where {T<:BLAS.BlasFloat}
