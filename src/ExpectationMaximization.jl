@@ -3,9 +3,9 @@ module ExpectationMaximization
 using ArgCheck
 using Distributions
 using Distributions: ArrayOfUnivariateDistribution, VectorOfUnivariateDistribution # for product distributions
-using LogExpFunctions: logsumexp!
+using LogExpFunctions: logsumexp! # kept as the reference implementation of `_softmax_rows!`
 using StatsBase: weights
-using Random # to add @kwdef 
+using Random # to add @kwdef
 
 # Extended functions
 import Distributions: fit_mle, params
@@ -19,7 +19,19 @@ abstract type AbstractEM end
 size_sample(y::AbstractMatrix) = size(y, 2)
 size_sample(y::AbstractVector) = length(y)
 
-argmaxrow(M) = [argmax(r) for r in eachrow(M)]
+# `argmax` over `eachrow` of a column-major matrix walks each row with stride `N`; scanning column by
+# column instead is ~5x faster. Strict `>` keeps `argmax`'s "first maximum wins" tie breaking.
+function argmaxrow(M)
+    z = Vector{Int}(undef, size(M, 1))
+    @inbounds for n in axes(M, 1)
+        best, j = M[n, firstindex(M, 2)], firstindex(M, 2)
+        for k in axes(M, 2)
+            M[n, k] > best && ((best, j) = (M[n, k], k))
+        end
+        z[n] = j
+    end
+    return z
+end
 
 """
     predict(mix::MixtureModel, y::AbstractVector; robust=false)
@@ -37,14 +49,15 @@ Evaluate the probability for each observations to belong to a category given a `
 """
 function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
     # evaluate likelihood for each components k
-    dists = mix.components
+    dists = components(mix)
     α = probs(mix)
     K = length(dists)
     N = size_sample(y)
     LL = zeros(N, K)
-    γ = similar(LL)
     c = zeros(N)
-    E_step!(LL, c, γ, dists, α, y; robust=robust)
+    s = zeros(N)
+    γ = LL   # γ aliases LL: the posteriors overwrite the log-likelihoods in place
+    E_step!(LL, c, γ, s, dists, α, y; robust=robust)
     return γ
 end
 

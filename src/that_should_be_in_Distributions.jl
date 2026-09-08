@@ -58,7 +58,9 @@ The `fit_mle` for a `ArrayOfUnivariateDistribution` distributions `dists` is the
 """
 function fit_mle(dists::VectorOfUnivariateDistribution, x::AbstractMatrix{<:Real}, args...)
     length(dists) == size(x, 1) || throw(DimensionMismatch("The dimensions of dists and x are inconsistent."))
-    return product_distribution([fit_mle(d, promote_sample(eltype(d), x[s, :]), args...) for (s, d) in enumerate(dists.dists)]...)
+    # `view` rather than `x[s, :]`: the latter gathers a fresh N-vector for each of the D marginals,
+    # on every iteration. Same as the `Product` method above, which already uses `eachrow`.
+    return product_distribution([fit_mle(d, promote_sample(eltype(d), view(x, s, :)), args...) for (s, d) in enumerate(dists.dists)]...)
 end
 
 function fit_mle(dists::ArrayOfUnivariateDistribution, x::AbstractArray, args...)
@@ -95,11 +97,14 @@ end
 `fit_mle` for `Laplace` distribution weighted data sets.
 """
 function fit_mle(::Type{<:Laplace}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
-    xc = similar(x)
-    copyto!(xc, x)
-    m = median(xc, weights(w))
-    xc .= abs.(x .- m)
-    return Laplace(m, mean(xc, weights(w)))
+    m = median(x, weights(w))   # StatsBase's weighted quantile does not mutate `x`, so no copy is needed
+    s = zero(float(eltype(x)))
+    sw = zero(float(eltype(w)))
+    @inbounds for i in eachindex(x, w)
+        s += w[i] * abs(x[i] - m)
+        sw += w[i]
+    end
+    return Laplace(m, s / sw)
 end
 
 """

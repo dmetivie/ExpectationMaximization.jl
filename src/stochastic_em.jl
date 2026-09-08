@@ -47,29 +47,45 @@ function fit_mle!(
     N, K = size_sample(y), length(dists)
     # Allocate memory for in-place updates
     LL = zeros(N, K)
-    γ = similar(LL)
     c = zeros(N)
+    s = zeros(N)
+    γ = LL   # γ aliases LL: the posteriors overwrite the log-likelihoods in place
     ẑ = zeros(Int, N)
-    γ_n = zeros(K)
-    
+
     !isnothing(w) && @argcheck length(w) == N
-    
+
     converged = false
     iterations = 0
     logtots = eltype(c)[]
 
     # E-step
-    E_step!(LL, c, γ, dists, α, y; robust=robust)
+    E_step!(LL, c, γ, s, dists, α, y; robust=robust)
 
     # Loglikelihood
-    logtot = isnothing(w) ? sum(c) : sum(w[n] * c[n] for n in eachindex(c))
+    logtot = isnothing(w) ? sum(c) : _weighted_sum(w, c)
     (display == :iter) && println("Method = $(method)\nIteration 0: loglikelihood = ", logtot)
 
     for it = 1:maxiter
-        # S-step
-        for (i, ℙ) in enumerate(eachrow(γ))
-            γ_n .= ℙ # Categorical do not accept subarray
-            ẑ[i] = rand(method.rng, Categorical(γ_n))
+        # A non-finite loglikelihood means some observation has zero density under every component,
+        # so its posterior row is `NaN` and the S-step would silently assign it to component 1.
+        isfinite(logtot) || throw(
+            DomainError(
+                logtot,
+                "StochasticEM: non-finite loglikelihood, some observation has zero density under every component. Try `robust = true` or another initial condition.",
+            ),
+        )
+
+        # S-step: inlined inverse-CDF draw. `<=` (not `<`) reproduces
+        # `rand(rng, ::DiscreteNonParametric)` bit for bit, i.e. one `rand(rng, Float64)` and a
+        # forward scan of the cumulative probabilities, so a seeded run is unchanged.
+        @inbounds for n in axes(γ, 1)
+            u = rand(method.rng)
+            k, acc = 1, γ[n, 1]
+            while acc <= u && k < K
+                k += 1
+                acc += γ[n, k]
+            end
+            ẑ[n] = k
         end
         cat = [findall(ẑ .== k) for k = 1:K]
 
@@ -77,10 +93,10 @@ function fit_mle!(
         isnothing(w) ? M_step!(α, dists, y, cat, method) : M_step!(α, dists, y, cat, w, method)
 
         # E-step
-        E_step!(LL, c, γ, dists, α, y; robust=robust)
+        E_step!(LL, c, γ, s, dists, α, y; robust=robust)
 
         # Loglikelihood
-        logtotp = isnothing(w) ? sum(c) : sum(w[n] * c[n] for n in eachindex(c))
+        logtotp = isnothing(w) ? sum(c) : _weighted_sum(w, c)
         (display == :iter) && println("Iteration $(it): loglikelihood = ", logtotp)
 
         push!(logtots, logtotp)
@@ -104,29 +120,44 @@ function fit_mle!(
         end
     end
 
-    return Dict("converged" => converged, "iterations" => iterations, "logtots" => logtots)
+    return Dict{String,Any}(
+        "converged" => converged, "iterations" => iterations, "logtots" => logtots
+    )
 end
 
 """
     M_step!(α, dists, y, cat, method::StochasticEM)
 For the `StochasticEM` the `cat` drawn at S-step for each observation in `y` is used to update `α` and `dists`.
+`cat[k]` indexes the observations assigned to component `k`, so the data is passed as a view rather than copied.
 """
 function M_step!(α, dists, y::AbstractVector, cat, method::StochasticEM)
-    α[:] = length.(cat) / size_sample(y)
-    dists[:] = [fit_mle(dists[k], y[cₖ]) for (k, cₖ) in enumerate(cat)]
+    N = size_sample(y)
+    for (k, cₖ) in enumerate(cat)
+        α[k] = length(cₖ) / N
+        dists[k] = fit_mle(dists[k], view(y, cₖ))
+    end
 end
 
 function M_step!(α, dists, y::AbstractMatrix, cat, method::StochasticEM)
-    α[:] = length.(cat) / size_sample(y)
-    dists[:] = [fit_mle(dists[k], y[:, cₖ]) for (k, cₖ) in enumerate(cat)]
+    N = size_sample(y)
+    for (k, cₖ) in enumerate(cat)
+        α[k] = length(cₖ) / N
+        dists[k] = fit_mle(dists[k], view(y, :, cₖ))
+    end
 end
 
 function M_step!(α, dists, y::AbstractVector, cat, w, method::StochasticEM)
-    α[:] = [sum(w[cₖ]) for cₖ in cat] / sum(w)
-    dists[:] = [fit_mle(dists[k], y[cₖ], w[cₖ]) for (k, cₖ) in enumerate(cat)]
+    sw = sum(w)
+    for (k, cₖ) in enumerate(cat)
+        α[k] = sum(view(w, cₖ)) / sw
+        dists[k] = fit_mle(dists[k], view(y, cₖ), view(w, cₖ))
+    end
 end
 
 function M_step!(α, dists, y::AbstractMatrix, cat, w, method::StochasticEM)
-    α[:] = [sum(w[cₖ]) for cₖ in cat] / sum(w)
-    dists[:] = [fit_mle(dists[k], y[:, cₖ], w[cₖ]) for (k, cₖ) in enumerate(cat)]
+    sw = sum(w)
+    for (k, cₖ) in enumerate(cat)
+        α[k] = sum(view(w, cₖ)) / sw
+        dists[k] = fit_mle(dists[k], view(y, :, cₖ), view(w, cₖ))
+    end
 end

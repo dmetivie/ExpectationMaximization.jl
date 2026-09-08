@@ -443,6 +443,152 @@ end
     @test count(ẑ .== z_true) / N > 0.99  # well-separated clusters → near-perfect prediction
 end
 
+@testset "Fused softmax kernel matches the logsumexp! reference" begin
+    EM = ExpectationMaximization
+    function reference!(c, γ, LL)   # exactly what the E-step used to do
+        EM.logsumexp!(c, LL)
+        @. γ = exp(LL - c)
+        return c, γ
+    end
+
+    rows = Any[
+        [-Inf -Inf], [Inf Inf], [Inf 0.0], [Inf -Inf], [-Inf 0.0], [NaN 0.0], [NaN NaN],
+        [-Inf -Inf -Inf], [0.0 -1.0 -2.0], [-1e300 -1.1e300], [709.782712893384 0.0],
+        [-1e308 -1e308],
+    ]
+    for LL0 in rows, robust in (false, true)
+        N, K = size(LL0)
+        LLr, cr, γr = copy(LL0), zeros(N), zeros(N, K)
+        LLn, cn, γn, s = copy(LL0), zeros(N), zeros(N, K), zeros(N)
+        if robust
+            replace!(LLr, -Inf => nextfloat(-Inf), Inf => log(prevfloat(Inf)))
+            EM._clamp_inf!(LLn)
+        end
+        @test all(isequal.(LLr, LLn))       # _clamp_inf! ≡ replace! with the two Pairs
+        reference!(cr, γr, LLr)
+        EM._softmax_rows!(cn, γn, LLn, s)
+
+        if !isfinite(maximum(LLn))
+            # degenerate row: reproduce the old output bit for bit (isequal, so NaN matches NaN)
+            @test all(isequal.(cr, cn))
+            @test all(isequal.(γr, γn))
+        elseif isapprox(sum(γr), N)
+            # ordinary row: the reference adds log1p(Σ_{k≠argmax}) where the fused kernel adds
+            # log(Σ_k), so they may differ by an ulp
+            @test all(isapprox.(cr, cn; atol=1e-12, rtol=1e-14))
+            @test γr ≈ γn atol = 1e-12
+        else
+            # A row of huge but finite values: `c + log(s)` rounds back to `c`, so the reference
+            # returned an UNNORMALISED γ (all ones, summing to K) which silently corrupts α and
+            # every fit_mle in the M-step. Reachable with `robust = true` for an observation that
+            # lies outside every component's support. The fused kernel normalises; that is a fix.
+            @test !isapprox(sum(γr), N)     # the previous behaviour really was broken here
+            @test sum(γn) ≈ N               # every row of the new posteriors sums to one
+            @test cr == cn                  # the loglikelihood itself is unchanged
+        end
+    end
+end
+
+@testset "Fused softmax: γ may alias LL, and posteriors sum to one" begin
+    EM = ExpectationMaximization
+    rng = StableRNG(20240)
+    for _ = 1:200
+        N, K = rand(rng, 1:60), rand(rng, 1:6)
+        LL = (rand(rng, N, K) .- 0.5) .* exp(20rand(rng))
+        for _ = 1:rand(rng, 0:3)
+            LL[rand(rng, 1:N), rand(rng, 1:K)] = rand(rng, (-Inf, Inf, NaN, -1e308, 0.0))
+        end
+        c1, γ1, s1 = zeros(N), zeros(N, K), zeros(N)
+        c2, LL2, s2 = zeros(N), copy(LL), zeros(N)
+        EM._softmax_rows!(c1, γ1, LL, s1)
+        EM._softmax_rows!(c2, LL2, LL2, s2)     # γ === LL
+        @test reinterpret(UInt64, c1) == reinterpret(UInt64, c2)
+        @test reinterpret(UInt64, vec(γ1)) == reinterpret(UInt64, vec(LL2))
+    end
+    # A row of huge but finite log-likelihoods: `c + log(s)` rounds back to `c`, and the previous
+    # implementation then returned γ = [1 1], which does not sum to one and silently corrupts α and
+    # every fit_mle in the M-step. Reachable with `robust = true` for an observation that lies
+    # outside every component's support.
+    LL = [-1e308 -1e308]
+    c, γ, s = zeros(1), zeros(1, 2), zeros(1)
+    EM._softmax_rows!(c, γ, LL, s)
+    @test sum(γ) ≈ 1
+    @test γ ≈ [0.5 0.5]
+end
+
+@testset "E-step allocates nothing per iteration (univariate)" begin
+    EM = ExpectationMaximization
+    rng = StableRNG(4)
+    dists = [Normal(-1.0, 1.0), Normal(1.0, 1.5)]
+    α = [0.4, 0.6]
+    N, K = 5_000, 2
+    y = rand(rng, MixtureModel(dists, α), N)
+    LL, c, s = zeros(N, K), zeros(N), zeros(N)
+    EM.E_step!(LL, c, LL, s, dists, α, y)                    # compile
+    @test (@allocated EM.E_step!(LL, c, LL, s, dists, α, y)) == 0
+    @test all(isapprox.(sum(LL, dims=2), 1))                 # LL now holds the posteriors
+end
+
+@testset "Multi-start forwards rtol and does not silently drop initial conditions" begin
+    rng = StableRNG(11)
+    y = rand(rng, MixtureModel([Normal(-2.0, 1.0), Normal(2.0, 1.0)], [0.4, 0.6]), 5_000)
+    g1 = MixtureModel([Normal(-1.0, 1.0), Normal(1.0, 1.0)], [0.5, 0.5])
+    g2 = MixtureModel([Normal(-0.5, 2.0), Normal(0.5, 2.0)], [0.5, 0.5])
+
+    # `rtol` used to be dropped for the FIRST initial condition, leaving it with no convergence
+    # criterion at all (atol = 0), so it ran the full maxiter and returned a different model.
+    _, h_single = fit_mle(g1, y; atol=0, rtol=1e-6, maxiter=10_000, infos=true)
+    _, h_array = fit_mle([g1], y; atol=0, rtol=1e-6, maxiter=10_000, infos=true)
+    @test h_array["converged"]
+    @test h_array["iterations"] == h_single["iterations"]
+
+    # `logtots` is empty when maxiter = 0. Indexing it used to throw a BoundsError that the bare
+    # `catch` swallowed, silently discarding every initial condition after the first.
+    m0, h0 = fit_mle([g1, g2], y; maxiter=0, infos=true)
+    @test m0 isa MixtureModel
+    @test h0["iterations"] == 0
+    @test isempty(h0["logtots"])
+
+    # the best initial condition is still the one returned
+    _, h_best = fit_mle([g1, g2], y; atol=1e-8, infos=true)
+    _, h_g1 = fit_mle(g1, y; atol=1e-8, infos=true)
+    _, h_g2 = fit_mle(g2, y; atol=1e-8, infos=true)
+    @test h_best["logtots"][end] ≈ max(h_g1["logtots"][end], h_g2["logtots"][end])
+end
+
+@testset "predict tie-breaking is first-maximum-wins" begin
+    EM = ExpectationMaximization
+    M = [0.5 0.5 0.0
+         0.2 0.4 0.4
+         1.0 0.0 0.0]
+    @test EM.argmaxrow(M) == [1, 2, 1] == [argmax(r) for r in eachrow(M)]
+    R = rand(StableRNG(8), 500, 4)
+    @test EM.argmaxrow(R) == [argmax(r) for r in eachrow(R)]
+end
+
+@testset "Weighted Laplace fit is unchanged by dropping the sample copy" begin
+    EM = ExpectationMaximization
+    rng = StableRNG(31)
+    x = rand(rng, Laplace(1.5, 2.0), 20_000)
+    w = rand(rng, 20_000) .+ 0.1
+    d = fit_mle(Laplace, x, w)
+    m = median(x, EM.weights(w))
+    @test params(d)[1] == m
+    @test params(d)[2] ≈ mean(abs.(x .- m), EM.weights(w)) rtol = 1e-12
+end
+
+@testset "Vector-of-arrays sample layout is still unsupported" begin
+    # The univariate E-step uses `logpdf.(dists[k], y)`, which only works because Distributions
+    # makes univariate distributions broadcast-scalar. So the `ArrayOfUnivariateDistribution`
+    # layout (a vector of arrays) cannot be reached through `fit_mle`. Pinned here so that a
+    # future E-step rewrite starts supporting it deliberately rather than by accident.
+    y = [rand(StableRNG(9 + i), 2) for i = 1:50]
+    mix = MixtureModel(
+        [product_distribution([Normal(), Gamma(2, 1)]),
+            product_distribution([Normal(3), Gamma(3, 1)])], [0.5, 0.5])
+    @test_throws MethodError fit_mle(mix, y)
+end
+
 @testset "MNIST Bernoulli Mixture (ClassicEM and StochasticEM)" begin
     binarify(x) = x != 0 ? true : false
     dataset = MNIST(:train)
