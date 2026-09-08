@@ -34,8 +34,11 @@ function argmaxrow(M)
 end
 
 """
-    predict(mix::MixtureModel, y::AbstractVector; robust=false)
-Evaluate the most likely category for each observations given a `MixtureModel`.
+    predict(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
+Evaluate the most likely category for each observation given a `MixtureModel`, i.e. the `argmax` over the
+row of [`predict_proba`](@ref) belonging to that observation.
+Returns a length-`N` `Vector{Int}` of component indices in `1:ncomponents(mix)`; ties go to the lowest index.
+When `y` is an `AbstractMatrix`, each **column** is one observation, so `N = size(y, 2)`.
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 """
 function predict(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
@@ -44,7 +47,11 @@ end
 
 """
     predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust=false)
-Evaluate the probability for each observations to belong to a category given a `MixtureModel`..
+Evaluate the probability for each observation to belong to a category given a `MixtureModel`.
+Returns a fresh `N × K` matrix whose row `n` is the posterior distribution of the component label of
+observation `n`, with `K = ncomponents(mix)` and `N = size_sample(y)` (`length(y)` for a vector,
+`size(y, 2)` for a matrix, where each **column** is one observation). Every row sums to `1` unless it is
+degenerate, i.e. the observation has zero density under every component (see `robust`).
 - `robust = true` will prevent the (log)likelihood to under(overflow)flow to `-∞` (or `∞`).
 """
 function predict_proba(mix::MixtureModel, y::AbstractVecOrMat; robust=false)

@@ -1,10 +1,11 @@
 """
     fit_mle(mix::MixtureModel, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, rtol=nothing, robust=false, infos=false)
-Use the an Expectation Maximization (EM) algorithm to maximize the Loglikelihood (fit) the mixture with an i.i.d sample `y`.
-The `mix` input is a mixture that is used to initilize the EM algorithm.
-- `weights` when provided, it will compute a weighted version of the EM. (Useful for fitting mixture of mixtures)
+Use an Expectation Maximization (EM) algorithm to maximize the Loglikelihood (fit) the mixture with an i.i.d sample `y`.
+The `mix` input is a mixture that is used to initialize the EM algorithm.
+When `y` is an `AbstractMatrix`, each **column** is one observation, i.e. there are `size(y, 2)` observations of dimension `size(y, 1)`.
+- `weights` at most one positional weight vector `w`, of length `size_sample(y)`, may be given; it then computes a weighted version of the EM. (Useful for fitting mixture of mixtures)
 - `method` determines the algorithm used.
-- `infos = true` returns a `Dict` with informations on the algorithm (converged, iteration number, loglikelihood).
+- `infos = true` returns the tuple `(mix_fitted, history)` instead of just `mix_fitted`, where `history::Dict{String,Any}` holds `"converged"::Bool`, `"iterations"::Int` (number of EM iterations actually performed) and `"logtots"::Vector` (the loglikelihood after each of those iterations). The iteration-0 loglikelihood is **not** stored, so `length(history["logtots"]) == history["iterations"]`, and it is empty when `maxiter = 0`.
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 - `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops.
 - `rtol` relative tolerance for convergence, `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<rtol*(|ℓ⁽ⁱ⁺¹⁾| + |ℓ⁽ⁱ⁾|)/2` (does not check if `rtol` is `nothing`)
@@ -53,9 +54,17 @@ _last_loglikelihood(history) = isempty(history["logtots"]) ? -Inf : history["log
 """
     fit_mle(mix::AbstractArray{<:MixtureModel}, y::AbstractVecOrMat, weights...; method = ClassicEM(), display=:none, maxiter=1000, atol=1e-3, rtol=nothing, robust=false, infos=false)
 
-Do the same as `fit_mle` for each (initial) mixtures in the mix array. Then it selects the one with the largest loglikelihood.
-Warning: It uses try and catch to avoid errors messages in case EM converges toward a singular solution (probably using robust should be enough in most case to avoid errors).
-If every initial condition fails, the first error is rethrown.
+Do the same as `fit_mle` for each (initial) mixture in the `mix` array, then keep the fit with the largest
+final loglikelihood `history["logtots"][end]` (taken as `-Inf` when `logtots` is empty, e.g. `maxiter = 0`);
+ties keep the earliest initial condition.
+
+Every initial condition runs inside a `try`/`catch`, so one singular solution does not abort the whole sweep
+(using `robust = true` should be enough to avoid most errors in the first place). A failing initial condition
+is reported with `@debug` and skipped.
+- An `InterruptException` is never swallowed: it is rethrown immediately, so `Ctrl-C` still stops the sweep.
+- If *every* initial condition fails, the error raised by the **first** failing one is rethrown.
+- All keywords are forwarded unchanged to `fit_mle(mix[j], y, weights...)`; see its docstring for their meaning.
+- `infos = true` returns `(mix_best, history_best)` for the selected fit instead of just `mix_best`.
 """
 function fit_mle(
     mix::AbstractArray{<:MixtureModel},
@@ -103,9 +112,13 @@ end
 # E-step methods
 
 """
-    loglikelihoods!(LL, dists, α, y)
-Fill `LL[n, k] = log(α[k]) + logpdf(dists[k], y[n])` (`y[:, n]` for multivariate samples).
-Extra methods can be added for specific component types as long as they produce the same `LL`.
+    loglikelihoods!(LL::AbstractMatrix, dists, α, y::AbstractVector)
+    loglikelihoods!(LL::AbstractMatrix, dists, α, y::AbstractMatrix)
+Fill `LL[n, k] = log(α[k]) + logpdf(dists[k], y[n])` and return `LL`. For the `AbstractMatrix` method each
+**column** of `y` is one observation, so the entry is `log(α[k]) + logpdf(dists[k], y[:, n])`.
+
+This is the extension hook of the E-step: add a method for your component or sample type if it can score a
+whole sample at once, the only contract being the value of `LL[n, k]` above.
 """
 function loglikelihoods!(LL::AbstractMatrix, dists, α, y::AbstractVector)
     # `logpdf.(dists[k], y)` is already a fused allocation-free broadcast, and the `Broadcasted`
@@ -198,6 +211,23 @@ function _softmax_rows!(
     return γ
 end
 
+"""
+    E_step!(LL, c, γ, s, dists, α, y; robust=false)
+E-step, in two stages: [`loglikelihoods!`](@ref) fills `LL[n, k] = log(α[k]) + logpdf(dists[k], y[n])`
+(`y[:, n]` for multivariate samples), then [`_softmax_rows!`](@ref) turns every row into a posterior.
+Returns `γ`.
+- `LL` the `N × K` log-likelihood matrix. Entirely overwritten, first with the log-likelihoods and then
+  with the posteriors.
+- `c` a length-`N` vector filled with `c[n] = logsumexp(LL[n, :]) = log ℙ(y[n])`. The `fit_mle!` drivers
+  sum (or weight-sum) it to get the loglikelihood, so no extra pass over `y` is needed.
+- `γ` the `N × K` posterior matrix, `γ[n, k] = ℙ(zₙ = k ∣ yₙ)`. It **may alias** `LL`, and every caller in
+  this package passes `γ === LL`, since `LL` is dead once the posteriors are formed. The contract is that
+  nothing afterwards reads `LL` expecting log-likelihoods; pass a distinct `γ` if you need both.
+- `s` a length-`N` scratch vector. Its contents are meaningless on entry and on exit.
+- `dists`, `α` the current components and mixing weights; `y` the sample (a vector, or a `D × N` matrix).
+- `robust = true` clamps `±Inf` log-likelihoods before normalizing, which is what prevents a degenerate,
+  unnormalized row of `γ`.
+"""
 function E_step!(
     LL::AbstractMatrix,
     c::AbstractVector,

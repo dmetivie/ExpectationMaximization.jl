@@ -60,6 +60,15 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
 2. The `logpdf(dist, y)` is defined (it is used in the E-step)
 3. The `fit_mle(dist, y, weights)` returns the distribution with the updated parameters maximizing the likelihood. This is used in the M-step of the `ClassicalEM` algorithm. For the `StochasticEM` version, only `fit_mle(dist, y)` is needed. Type or instance version of `fit_mle` for your `dist` are accepted thanks to this [conversion line](https://github.com/dmetivie/ExpectationMaximization.jl/blob/60e833236a122cb5ef58150b1a445e2941ace5d1/src/that_should_be_in_Distributions.jl#L16).
 
+!!! warning "Your `fit_mle` must accept views"
+    To avoid copying the sample at every iteration, the M-step passes *views* rather than freshly allocated
+    arrays: `fit_mle(dist, view(y, cat))` (and `view(y, :, cat)`, `view(w, cat)`) for `StochasticEM`, and a
+    column view of the posterior matrix for `ClassicEM`. Annotate your methods with
+    `AbstractVector`/`AbstractMatrix`/`AbstractArray`, as `Distributions.jl` does — a method typed `::Vector`
+    or `::Matrix` will not be called for a `SubArray`.
+    The weights handed to `ClassicEM`'s `fit_mle(dist, y, γₖ)` are scratch memory owned by the algorithm:
+    read them, never keep a reference to them.
+
 In general, step 2. is easy, while step 3. is only known explicitly for a few common distributions.
 In step 3., if the `fit_mle` is not explicitly known, you can always implement a numerical scheme, if it exists, for `fit_mle(dist, y)` see [`Gamma` distribution example](https://github.com/JuliaStats/Distributions.jl/blob/34a05d8a1671052624e7fa246b58484acc32cfe5/src/univariate/continuous/gamma.jl#L171) or use tools like [Optimizations.jl](https://docs.sciml.ai/Optimization/stable/).
 Or, when possible, represent your “difficult” distribution as a mixture of simple terms.

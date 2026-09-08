@@ -21,7 +21,7 @@ The benchmark below only tests the **Gaussian mixture** case (the most common), 
 
 No heavy programming tricks are used. The performance comes from standard Julia best practices:
 
-- **E-step**: pre-allocated memory, `@views`, type-stable code, and `logsumexp!` from `LogExpFunctions.jl`.
+- **E-step**: memory allocated once and reused at every iteration (the posteriors overwrite the log-likelihood matrix in place), `@views`, type-stable code behind a per-component function barrier, and a fused allocation-free row-wise log-sum-exp/softmax in place of `logsumexp!` followed by a second `exp.(LL .- c)` pass over the whole matrix.
 - **M-step**: delegates to `fit_mle` from `Distributions.jl`, which is well-optimized for each distribution (e.g., see the Multivariate Normal [implementation](https://github.com/JuliaStats/Distributions.jl/blob/aad64af36e83f9a191de34f497e584943ffa84e5/src/multivariate/mvnormal.jl#L419)).
 
 !!! note "Clean Julia code"

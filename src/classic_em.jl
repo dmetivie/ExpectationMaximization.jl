@@ -6,7 +6,10 @@ struct ClassicEM <: AbstractEM end
 
 """
     fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, method::ClassicEM; display=:none, maxiter=1000, atol=1e-3, rtol=nothing, robust=false)
-Use the EM algorithm to update the Distribution `dists` and weights `α` composing a mixture distribution.
+    fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, w::Union{Nothing,AbstractVector}, method::ClassicEM; display=:none, maxiter=1000, atol=1e-3, rtol=nothing, robust=false)
+Use the EM algorithm to update **in place** the Distribution `dists` and weights `α` composing a mixture distribution.
+When `y` is an `AbstractMatrix`, each column is one observation. `w`, when given and not `nothing`, is a weight vector of length `size_sample(y)`.
+Returns `history::Dict{String,Any}` with keys `"converged"::Bool`, `"iterations"::Int` and `"logtots"::Vector` (loglikelihood after each performed iteration, empty when `maxiter = 0`).
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 - `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops.
 - `rtol` relative tolerance for convergence, `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<rtol*(|ℓ⁽ⁱ⁺¹⁾| + |ℓ⁽ⁱ⁾|)/2` (does not check if `rtol` is `nothing`)
@@ -97,7 +100,14 @@ end
 
 """
     M_step!(α, dists, y, γ, method::ClassicEM)
-For the `ClassicEM` the weigths `γ` computed at E-step for each observation in `y` are used to update `α` and `dists`.
+    M_step!(α, dists, y, γ, w, method::ClassicEM)
+For the `ClassicEM` the weights `γ` computed at the E-step for each observation in `y` are used to update
+`α` and `dists` in place: `α[k] = mean(γ[:, k])` and `dists[k] = fit_mle(dists[k], y, γ[:, k])`.
+
+The weighted variant folds the observation weights into the posteriors once (`γ .*= w`) and normalizes `α`
+by `sum(w)`, rather than materializing `w .* γ[:, k]` for each of the `K` components. It therefore
+**overwrites `γ`**, which is sound inside `fit_mle!` only because the next E-step rewrites `γ` entirely — so
+`γ` must not be read after the M-step.
 """
 function M_step!(α, dists, y::AbstractVecOrMat, γ, method::ClassicEM)
     N = size(γ, 1)

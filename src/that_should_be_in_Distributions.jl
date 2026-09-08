@@ -4,9 +4,14 @@
 ## * Instance version of `fit_mle` * ##
 
 """
-In EM.jl the "instance" version of `fit_mle` is supported (in addition of the current "type" version). 
+    fit_mle(g::D, args...) where {D<:Distribution}
+In `ExpectationMaximization.jl` the "instance" version of `fit_mle` is supported (in addition of the current "type" version).
 Note this is not supported in `Distributions.jl`.
 Example: `fit_mle(Bernoulli(0.2), x)` is accepted in addition of `fit_mle(Bernoulli, x)` this allows compatibility with how `fit_mle(g::Product)` and `fit_mle(g::MixtureModel)` are written.
+
+By default the instance is simply dropped in favour of `typeof(g).name.wrapper`. More specific methods are
+provided wherever the instance carries information the type does not: `DiagNormal`/`IsoNormal`/`FullNormal`
+(the covariance structure), `Binomial` (`ntrials`) and `Categorical` (`ncategories`).
 """
 function fit_mle(g::D, args...) where {D<:Distribution}
     fit_mle(typeof(g).name.wrapper, args...)
@@ -30,11 +35,15 @@ fit_mle(d::T, x::AbstractArray{<:Integer}, w::AbstractArray{<:Real}) where {T<:C
 #TODO! open issue in `Distributions.jl`
 
 """
-    fit_mle(g::Product, x::AbstractMatrix)
-    fit_mle(g::Product, x::AbstractMatrix, γ::AbstractVector)
+    fit_mle(g::Product, x::AbstractMatrix, args...)
 
-The `fit_mle` for multivariate Product distributions `g` is the `product_distribution` of `fit_mle` of each components of `g`.
-Product is meant to be depreacated in next versions of `Distribution.jl`. Use the analog `VectorOfUnivariateDistribution` type instead.
+The `fit_mle` for a multivariate `Product` distribution `g` is the `product_distribution` of the `fit_mle`
+of each of its components, marginal `s` being fitted on row `s` of `x` — i.e. each **column** of `x` is one
+observation and `length(g) == size(x, 1)` is required.
+`args...` is forwarded to every marginal `fit_mle`, so it is either empty or a single weight vector `γ` of
+length `size(x, 2)`.
+`Product` is meant to be deprecated in the next versions of `Distributions.jl`. Use the analog
+`VectorOfUnivariateDistribution` type instead.
 """
 function fit_mle(g::Product, x::AbstractMatrix, args...)
     d = size(x, 1)
@@ -44,17 +53,23 @@ end
 
 params(g::Product) = params.(g.v)
 
-params(d::ArrayOfUnivariateDistribution) = params.(d.dists) # 
+params(d::ArrayOfUnivariateDistribution) = params.(d.dists)
 
 #### Fitting
 promote_sample(::Type{dT}, x::AbstractArray{T}) where {T<:Real,dT<:Real} = T <: dT ? x : convert.(dT, x)
 
 """
-    fit_mle(dists::ArrayOfUnivariateDistribution, x::AbstractArray)
-    fit_mle(dists::ArrayOfUnivariateDistribution, x::AbstractArray, γ::AbstractVector)
+    fit_mle(dists::VectorOfUnivariateDistribution, x::AbstractMatrix{<:Real}, args...)
 
-The `fit_mle` for a `ArrayOfUnivariateDistribution` distributions `dists` is the `product_distribution` of `fit_mle` of each components of `dists`.
-`VectorOfUnivariateDistribution` should act like old `Product` while `ArrayOfUnivariateDistribution` are not really tested yet.
+The `fit_mle` for a `VectorOfUnivariateDistribution` `dists` is the `product_distribution` of the `fit_mle`
+of each of its components, marginal `s` being fitted on `view(x, s, :)` — i.e. each **column** of `x` is one
+observation and `size(x, 1) == length(dists)` is required. Because the row is passed as a view, component
+`fit_mle` methods must accept `AbstractVector` rather than `Vector`.
+`args...` is forwarded to every marginal `fit_mle`, so it is either empty or a single weight vector `γ` of
+length `size(x, 2)`.
+`VectorOfUnivariateDistribution` should act like the old `Product`, while the sibling
+`fit_mle(dists::ArrayOfUnivariateDistribution, x::AbstractArray, args...)` (same idea, but `x` an array of
+arrays) is not really tested yet and is deliberately left undocumented.
 """
 function fit_mle(dists::VectorOfUnivariateDistribution, x::AbstractMatrix{<:Real}, args...)
     length(dists) == size(x, 1) || throw(DimensionMismatch("The dimensions of dists and x are inconsistent."))
@@ -77,8 +92,12 @@ fit_mle(::Type{<:Dirac}, x::AbstractArray{T}) where {T<:Real} =
     length(unique(x)) == 1 ? Dirac(first(x)) : Dirac(NaN)
 
 """
-    fit_mle(::Type{<:Dirac}, x::AbstractArray{<:Real}[, w::AbstractArray{<:Real}])
-`fit_mle` for `Dirac` distribution (weighted or not) data sets.
+    fit_mle(::Type{<:Dirac}, x::AbstractArray{<:Real})
+    fit_mle(::Type{<:Dirac}, x::AbstractArray{<:Real}, w::AbstractArray{Float64})
+`fit_mle` for `Dirac` distribution (weighted or not) data sets. Returns `Dirac(first(x))` when all the
+observations carrying a non-zero weight are equal, and `Dirac(NaN)` otherwise.
+Note that the weighted method requires `w::AbstractArray{Float64}` exactly: another real element type
+(e.g. `Vector{Float32}`) is a `MethodError`, since there is no other weighted `Dirac` method to fall back on.
 """
 function fit_mle(
     ::Type{<:Dirac},
@@ -109,7 +128,9 @@ end
 
 """
     fit_mle(::Type{<:Uniform}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
-`fit_mle` for `Uniform` distribution weighted data sets. It is just the same as unweigted (removing zero weighted data).
+`fit_mle` for `Uniform` distribution weighted data sets. It is the same as the unweighted fit applied to the
+observations carrying a non-zero weight: the MLE only depends on the extrema of the support, so the non-zero
+weight values themselves are irrelevant. Requires `size(x) == size(w)`.
 """
 function fit_mle(::Type{<:Uniform}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
     size(x) == size(w) || throw(DimensionMismatch("Inconsistent array lengths."))
