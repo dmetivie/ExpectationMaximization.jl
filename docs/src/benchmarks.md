@@ -1,7 +1,7 @@
 # [Comparison with other packages](@id Benchmarks) 
 
 This benchmark was inspired by [this post](https://floswald.github.io/post/em-benchmarks/).
-The full benchmark code is available as a [Jupyter notebook](https://github.com/dmetivie/Pluto_export/blob/main/jupyter/benchmark_EM/benchmark_v2_K2_unidim.ipynb) and [here](https://github.com/dmetivie/ExpectationMaximization.jl/tree/master/benchmark/benchmark_v2_K2_unidim.jl).
+The full benchmark code is [`benchmark/benchmark_crosslang.jl`](https://github.com/dmetivie/ExpectationMaximization.jl/tree/master/benchmark/benchmark_crosslang.jl), with the figures drawn by [`benchmark/plot_crosslang.jl`](https://github.com/dmetivie/ExpectationMaximization.jl/tree/master/benchmark/plot_crosslang.jl). The original univariate-only version is kept as a [Jupyter notebook](https://github.com/dmetivie/Pluto_export/blob/main/jupyter/benchmark_EM/benchmark_v2_K2_unidim.ipynb).
 
 ## Scope and limitations of competing packages
 
@@ -29,13 +29,26 @@ No heavy programming tricks are used. The performance comes from standard Julia 
 
 ## Results
 
-![timing_K_2](https://raw.githubusercontent.com/dmetivie/ExpectationMaximization.jl/refs/heads/master/benchmark/timing_K_2.svg)
+All benchmark cases are shown in a single figure: one panel per `(K, D)`, with the fit time against the sample size `N` and one line per backend. Every backend gets the same initial conditions and the same, fixed number of EM iterations, so the panels compare the cost of an iteration rather than convergence speed.
 
-Or the ratio view:
+![timing_crosslang](https://raw.githubusercontent.com/dmetivie/ExpectationMaximization.jl/refs/heads/master/benchmark/timing_crosslang.svg)
 
-![timing_K_2_ratio](https://raw.githubusercontent.com/dmetivie/ExpectationMaximization.jl/refs/heads/master/benchmark/timing_K_2_ratio.svg)
+Or the same panels as a ratio to `ExpectationMaximization.jl`. Above the dashed line means slower than `ExpectationMaximization.jl`; the vertical axis is logarithmic because `mixtools` is several orders of magnitude slower on the multivariate cases.
 
-**Conclusion: for Gaussian mixtures, `ExpectationMaximization.jl` is about 4× faster than `Sklearn` (Python) and 7× faster than `mixtools` (R), while being only slightly slower than the Gaussian-specialized `GaussianMixtures.jl`. Crucially, unlike all competing packages, `ExpectationMaximization.jl` handles arbitrary mixture distributions out of the box.**
+![timing_crosslang_ratio](https://raw.githubusercontent.com/dmetivie/ExpectationMaximization.jl/refs/heads/master/benchmark/timing_crosslang_ratio.svg)
+
+**Conclusion: for Gaussian mixtures, `ExpectationMaximization.jl` is about 4× faster than `Sklearn` (Python) and 7× faster than `mixtools` (R) on the univariate `K = 2` case, while being only slightly slower than the Gaussian-specialized `GaussianMixtures.jl`. The multivariate panels widen that gap against `mixtools`, whose `mvnormalmixEM` is orders of magnitude slower. Crucially, unlike all competing packages, `ExpectationMaximization.jl` handles arbitrary mixture distributions out of the box.**
+
+### Reproducing these figures
+
+```sh
+julia --threads=1 --project=benchmark benchmark/benchmark_crosslang.jl   # writes benchmark/results/*.csv
+julia --project=benchmark benchmark/plot_crosslang.jl                    # writes benchmark/timing_crosslang*.svg
+```
+
+The benchmark and the plotting are separate scripts on purpose: the timings are written to `benchmark/results/benchmark_timings_<date>.csv` (columns `case,backend,K,D,N,time_s`), so a figure can be restyled, or an older run replotted, without paying for four backends again. `plot_crosslang.jl` takes an optional path to a specific CSV and derives the panels from whichever cases it finds in the file.
+
+There is also a Julia-only suite in `benchmark/benchmarks.jl`, run on every pull request by [AirspeedVelocity.jl](https://github.com/MilesCranmer/AirspeedVelocity.jl), which covers univariate, multivariate (isotropic, diagonal and full covariance), weighted and Bernoulli-product mixtures.
 
 If you have comments to improve these benchmarks, they are welcome.
 
