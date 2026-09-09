@@ -173,8 +173,6 @@ ExpectationMaximization._softmax_rows!
 
 ## Specialized components
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 For a matrix sample the generic E-step hands each component to `Distributions.logpdf!`, the batched entry
 point of `Distributions.jl`. Its own fallback is one `logpdf` call per observation — what this package used
 to do by hand — but a component that implements `Distributions._logpdf!` scores the whole sample in a
@@ -190,19 +188,6 @@ at `D = 50`, which is why the delegation and these kernels belong together). `sr
 fast paths for `MvNormal` as extra [`ExpectationMaximization._loglikelihood_col!`](@ref) methods, selected
 by dispatch on the component type, so nothing in the generic path changes and any component they do not
 match keeps the delegated `logpdf!` path; deleting the file would only make the package slower.
-=======
-=======
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
-The generic E-step calls `logpdf` once per observation, which is the right thing to do for an arbitrary
-component but leaves a lot on the table for the distributions whose density can be evaluated for a whole
-sample at once. `src/specialized.jl` adds such fast paths for `MvNormal` as extra
-[`ExpectationMaximization._loglikelihood_col!`](@ref) methods. They are selected by dispatch on the
-component type, so nothing in the generic path changes and any component they do not match keeps the
-per-observation fallback; deleting the file would only make the package slower.
-<<<<<<< HEAD
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
-=======
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
 
 Two kernels cover the three covariance shapes:
 
@@ -212,8 +197,6 @@ Two kernels cover the three covariance shapes:
   into a cache-resident `D × MVNORMAL_BLOCKSIZE` buffer and whitened with one in-place `PDMats.whiten!` —
   a BLAS-3 `trsm` — instead of the one BLAS-2 `trsv` per observation that `logpdf` performs.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 Measured speedup over the delegated `logpdf!` path, for one component, at `N = 10⁵`, single-threaded:
 
 | `D` | 2 | 10 | 50 | 100 |
@@ -227,25 +210,6 @@ Over that same range the allocation of one component's E-step goes from 1.5 MB (
 generic path, it does not grow with `N`. The results agree with the generic path to a few units in the
 last place, and the `ZeroMean*` variants are covered for free because the
 `IsoNormal`/`DiagNormal`/`FullNormal` aliases only constrain the covariance and element types.
-=======
-=======
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
-Measured speedup over the generic fallback at `N = 10⁵`, `K = 2`, single-threaded:
-
-| `D` | 2 | 10 | 50 | 100 |
-|:--|--:|--:|--:|--:|
-| `FullNormal` | 16.1× | 7.8× | 5.5× | 4.7× |
-| `DiagNormal` | 17.6× | 12.8× | 15.3× | 17.0× |
-| `IsoNormal` | 17.0× | 6.3× | 3.2× | 6.6× |
-
-Allocation at `D = 100`, `N = 10⁵` drops from 185.6 MB to 211 KB for a full covariance, and from 92.8 MB to
-under 2 KB for the other two. The results agree with the generic fallback to one or two units in the last
-place, and the `ZeroMean*` variants are covered for free because the `IsoNormal`/`DiagNormal`/`FullNormal`
-aliases only constrain the covariance and element types.
-<<<<<<< HEAD
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
-=======
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
 
 The same file also adds a `Distributions.fit_mle(::FullNormal, y, w)` method for the M-step. It computes
 exactly the same weighted maximum-likelihood estimate as `Distributions.jl` — the mean is bit-identical and
@@ -255,8 +219,6 @@ every call. `DiagNormal` and `IsoNormal` deliberately keep their own fits, which
 importantly, preserve the covariance type of the component.
 
 !!! note "Adding your own"
-<<<<<<< HEAD
-<<<<<<< HEAD
     If your component can score a whole sample at once, implementing `Distributions._logpdf!(out, d, y)`
     is enough and nothing here needs to change. Write a `_loglikelihood_col!` method (and, if the
     maximum-likelihood estimate can reuse a buffer, a `fit_mle` method) only when you also want what
@@ -264,17 +226,6 @@ importantly, preserve the covariance type of the component.
     calls, as the kernels above do. The contract is then only the value of `LL[n, k]` given in
     [How the implementation is organised](@ref); everything else, including the `γ`-aliases-`LL`
     convention, is handled by the generic E-step.
-=======
-=======
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
-    This is the intended way to make a particular component fast: add a `_loglikelihood_col!` method (and, if
-    the maximum-likelihood estimate can reuse a buffer, a `fit_mle` method) for your type. The contract is
-    only the value of `LL[n, k]` given in [How the implementation is organised](@ref);
-    everything else, including the `γ`-aliases-`LL` convention, is handled by the generic E-step.
-<<<<<<< HEAD
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
-=======
->>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
 
 ## Index
 
