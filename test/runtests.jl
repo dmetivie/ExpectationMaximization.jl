@@ -663,6 +663,7 @@ end
 end
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # A component implementing only the scalar `logpdf`, i.e. the minimum the genericity contract asks
 # for. `Distributions.logpdf!` must fall back to one call per observation for it.
 struct ScalarOnlyMv <: Distributions.ContinuousMultivariateDistribution
@@ -715,6 +716,8 @@ Distributions._logpdf(d::ScalarOnlyMv, x::AbstractVector) = -sum(abs2, x .- d.μ
     @test sum(probs(mix_fit)) ≈ 1
 end
 
+=======
+>>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
 =======
 >>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
 @testset "MNIST Bernoulli Mixture (ClassicEM and StochasticEM)" begin
