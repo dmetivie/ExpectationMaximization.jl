@@ -109,7 +109,9 @@ function ratio_series(rows, lookup, case, backend)
     return Ns, ratios
 end
 
-grid_size(n) = (cols = min(3, n); (cld(n, cols), cols))
+# `layout = length(panels)` lets Plots pick the grid; this only estimates the figure size, and
+# mirrors the near-square grid Plots settles on, so panels keep a sane aspect ratio.
+grid_size(n) = (ncol = ceil(Int, sqrt(n)); (cld(n, ncol), ncol))
 
 # ── Figures ───────────────────────────────────────────────────────────────────
 
@@ -129,7 +131,7 @@ function plot_absolute(rows, cases, backends)
         p
     end
     nrow, ncol = grid_size(length(panels))
-    return plot(panels...; layout=(nrow, ncol), size=(460ncol, 400nrow))
+    return plot(panels...; layout=length(panels), size=(460ncol, 400nrow))
 end
 
 function plot_ratio(rows, cases, backends, lookup)
@@ -153,7 +155,7 @@ function plot_ratio(rows, cases, backends, lookup)
         p
     end
     nrow, ncol = grid_size(length(panels))
-    return plot(panels...; layout=(nrow, ncol), size=(460ncol, 400nrow))
+    return plot(panels...; layout=length(panels), size=(460ncol, 400nrow))
 end
 
 # ── Summary printed alongside, so a CI log carries the numbers too ────────────
