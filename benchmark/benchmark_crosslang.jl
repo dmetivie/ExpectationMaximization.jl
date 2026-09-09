@@ -389,7 +389,7 @@ let
     alpha     = [0.5, 0.5]
     iters     = 20
 
-    NN = [500, 1_000, 5_000, 10_000, 50_000, 100_000]
+    NN = [500, 1_000, 5_000, 10_000, 25_000]
 
     @time "K2_D2" for N in NN
         @show N
@@ -436,7 +436,7 @@ let
     alpha     = [0.5, 0.5]
     iters     = 20
 
-    NN = [500, 1_000, 5_000, 10_000, 50_000]
+    NN = [500, 1_000, 5_000, 10_000, 20_000]
 
     @time "K2_D10" for N in NN
         @show N
@@ -470,7 +470,7 @@ println("Case K5_D15 — K=5, D=15, Multivariate Normal mixture")
 println("=" ^ 70)
 
 let
-    K = 5; D = 15
+    K = 5; D = 10
 
     # Distinct means: separated cluster centers with a per-dimension gradient
     μs_true = [[3.0 * (k - (K + 1) / 2) + 0.1d for d in 1:D] for k in 1:K]
@@ -486,7 +486,7 @@ let
     alpha     = fill(1.0 / K, K)
     iters     = 15
 
-    NN = [5_000, 10_000, 50_000]
+    NN = [1_000, 5_000, 10_000]
 
     case = "K$(K)_D$(D)"   # derived, so the label cannot drift from the actual K and D again
 

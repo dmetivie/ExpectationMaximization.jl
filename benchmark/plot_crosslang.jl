@@ -71,12 +71,13 @@ end
 
 # ── Layout ────────────────────────────────────────────────────────────────────
 
-# Panels read left to right by problem size; the reference backend comes first so
-# that its colour is the same in every panel.
+# Panels are grouped by dimension first, then by number of components: D = 1 (K = 2,
+# then K = 5), then D = 2, then D = 10, ... The reference backend comes first in
+# `backend_order` so that its colour is the same in every panel.
 function panel_order(rows)
     cases = unique(r.case for r in rows)
-    return sort(cases; by=c -> (first(r.K for r in rows if r.case == c),
-        first(r.D for r in rows if r.case == c)))
+    return sort(cases; by=c -> (first(r.D for r in rows if r.case == c),
+        first(r.K for r in rows if r.case == c)))
 end
 
 function backend_order(rows)
@@ -152,6 +153,8 @@ function plot_ratio(rows, cases, backends, lookup)
             isempty(N) && continue
             plot!(p, N, ratio; label="$backend / EM.jl", c=c + 1, marker=:circle, markersize=3)
         end
+        xlims!(p, 100, 2_000_000)
+        ylims!(p, 0.1, 1e5)
         p
     end
     nrow, ncol = grid_size(length(panels))
