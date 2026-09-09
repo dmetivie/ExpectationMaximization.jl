@@ -18,17 +18,28 @@ _mvnormal_c0(d::MvNormal) = -(length(d) * log(2π) + logdetcov(d)) / 2
 """
     _loglikelihood_col!(LLₖ, d::MvNormal, logα, y::AbstractMatrix)
 
+<<<<<<< HEAD
 `Distributions.sqmahal!`, which the generic path reaches through `logpdf!`, materializes a `D × N`
 centered copy of the sample and then still solves one triangular system per observation. These
 methods evaluate the entire sample in one pass instead:
+=======
+`logpdf(::MvNormal, x)` redoes a triangular solve for every single observation, and for a full
+covariance `Distributions.sqmahal!` additionally materializes a `D × N` centered copy of the whole
+sample. These methods evaluate the entire sample in one pass instead:
+>>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
 
 - isotropic or diagonal `Σ`: a weighted sum of squares, with no temporary at all;
 - full `Σ`: one blocked in-place `PDMats.whiten!` (a BLAS-3 `trsm`) per `MVNORMAL_BLOCKSIZE`
   observations, instead of one BLAS-2 `trsv` per observation.
 
+<<<<<<< HEAD
 Measured 3.5x-11.4x faster than the generic path for `D` from 2 to 100 at `N = 1e5`, agreeing to a
 few units in the last place, with an allocation bounded by `MVNORMAL_BLOCKSIZE` rather than growing
 with `N`.
+=======
+Measured 3x-18x faster than the generic fallback for `D` from 2 to 100 and `N` from 1e4 to 1e6
+(the ratio grows as the covariance gets simpler and shrinks as `D` grows), agreeing to 1-2 ulp.
+>>>>>>> d5c9d66bc6678fd9e52a0df125aaad605ebea5f3
 """
 function _loglikelihood_col!(
     LLₖ, d::Union{IsoNormal{T},DiagNormal{T}}, logα, y::AbstractMatrix
