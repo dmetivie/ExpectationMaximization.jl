@@ -1,5 +1,6 @@
 using BenchmarkTools
 using Distributions
+using Distributions: PDMats   # to spell out the MvNormal covariance types
 using ExpectationMaximization
 using MLDatasets: MNIST
 using StableRNGs
@@ -84,6 +85,8 @@ end
 
 # ── Multivariate: MvNormal K=2, varying dimension D and sample size N ─────────
 # Inspired by examples_multivariate.jl (2D Gaussian mixture and Old Faithful)
+# Note: `MvNormal(μ, I(D))` builds a `PDiagMat`, so this group exercises `DiagNormal`.
+# The `multivariate_K5_D15` group below covers the isotropic and full covariance cases.
 SUITE["multivariate"] = BenchmarkGroup()
 
 for D in [2, 10, 50]
@@ -98,6 +101,46 @@ for D in [2, 10, 50]
             fit_mle($mix_guess, $y; maxiter=100, atol=1e-4),
             evals = 1
         )
+    end
+end
+
+# ── Multivariate K=5, D=15: one entry per MvNormal covariance type ───────────
+# The covariance type of the *initial guess* is what the M-step preserves, and therefore what the
+# E-step dispatches on, so these three spellings exercise three different kernels. They are written
+# with explicit `PDMats` types because `MvNormal(μ, I(D))` builds a `PDiagMat`, not a `ScalMat`.
+# The sample comes from components with distinct AR(1) covariances (`Σ[i,j] = σ²ρ^|i-j|`), so the
+# isotropic and diagonal guesses are deliberately misspecified: what is measured here is the cost of
+# an iteration, not the quality of the fit. For the same reason the iteration count is fixed
+# (`atol = 0` never triggers), so that the three covariance types do each do the same amount of work
+# and a change in convergence speed cannot be mistaken for a change in speed.
+SUITE["multivariate_K5_D15"] = BenchmarkGroup()
+
+let
+    K, D = 5, 15
+    ar1_cov(σ, ρ) = Float64[σ^2 * ρ^abs(i - j) for i = 1:D, j = 1:D]
+
+    μs = [[3.0 * (k - (K + 1) / 2) + 0.1d for d = 1:D] for k = 1:K]
+    Σs = [ar1_cov(0.6 + 0.05k, (-1)^k * (0.2 + 0.03k)) for k = 1:K]
+    αs = [1.0 + 0.05k for k = 1:K]
+    mix_true = MixtureModel([MvNormal(μs[k], Σs[k]) for k = 1:K], αs ./ sum(αs))
+
+    μs_guess = [0.5 .* μ for μ in μs]   # shrunk toward zero, deliberately off from the truth
+    Σ_guess = [
+        "iso" => PDMats.ScalMat(D, 1.0),
+        "diag" => PDMats.PDiagMat(ones(D)),
+        "full" => PDMats.PDMat(Matrix(1.0I, D, D)),
+    ]
+
+    for (cov_type, Σ₀) in Σ_guess
+        mix_guess = MixtureModel([MvNormal(μ, Σ₀) for μ in μs_guess], fill(1 / K, K))
+        group = SUITE["multivariate_K5_D15"][cov_type] = BenchmarkGroup()
+        for N in [1_000, 10_000]
+            y = rand(StableRNG(1), mix_true, N)   # same seed, so all three see the same sample
+            group[N] = @benchmarkable(
+                fit_mle($mix_guess, $y; maxiter=20, atol=0.0),
+                evals = 1
+            )
+        end
     end
 end
 
