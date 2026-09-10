@@ -5,6 +5,7 @@ using Test
 using StableRNGs, Random
 using LinearAlgebra: I
 using MLDatasets: MNIST
+using LogExpFunctions: logsumexp!
 
 @testset "Univariate continuous Mixture Exponential + Gamma" begin
     rng = StableRNG(123)
@@ -446,7 +447,7 @@ end
 @testset "Fused softmax kernel matches the logsumexp! reference" begin
     EM = ExpectationMaximization
     function reference!(c, γ, LL)   # exactly what the E-step used to do
-        EM.logsumexp!(c, LL)
+        logsumexp!(c, LL)
         @. γ = exp(LL - c)
         return c, γ
     end

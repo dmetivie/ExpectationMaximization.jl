@@ -36,13 +36,6 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
 2. The `logpdf(dist, y)` is defined (it is used in the E-step)
 3. The `fit_mle(dist, y, weights)` returns the distribution with the updated parameters maximizing the likelihood. This is used in the M-step of the `ClassicalEM` algorithm. For the `StochasticEM` version, only `fit_mle(dist, y)` is needed. Type or instance version of `fit_mle` for your `dist` are accepted thanks to this [conversion line](https://github.com/dmetivie/ExpectationMaximization.jl/blob/60e833236a122cb5ef58150b1a445e2941ace5d1/src/that_should_be_in_Distributions.jl#L16).
 
-> [!WARNING]
-> **Your `fit_mle` must accept views.** To avoid copying the sample at every iteration, the M-step passes
-> *views* rather than freshly allocated arrays: `fit_mle(dist, view(y, cat))` (and `view(y, :, cat)`,
-> `view(w, cat)`) for `StochasticEM`, and a column view of the posterior matrix for `ClassicEM`. Annotate
-> your methods with `AbstractVector`/`AbstractMatrix`/`AbstractArray`, as `Distributions.jl` does — a method
-> typed `::Vector` or `::Matrix` will not be called for a `SubArray`.
-
 ## TODO (feel free to contribute)
 
 - Add more variants of the EM algorithm (so far there are the classic and stochastic version).

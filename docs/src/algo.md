@@ -60,8 +60,8 @@ fit_mle(::Type{<:Uniform}, x::AbstractArray{<:Real}, w::AbstractArray{<:Real})
 
 ### The math
 
-A mixture of `K` components with weights `α` has density `p(y) = Σₖ αₖ fₖ(y)`. Introducing the latent label
-`zₙ ∈ 1:K` of observation `n`, EM alternates between the posterior of that label (E-step) and a refit of
+A mixture of $K$ components with weights $\alpha$ has density $p(y) = \sum_k \alpha_k f_k(y)$. Introducing the latent label
+$z_n \in \{1, \cdots,K\}$ of observation $n$, the EM algorithm alternates between the posterior of that label (E-step) and a refit of
 every component with those posteriors as weights (M-step):
 
 ```math
@@ -78,8 +78,8 @@ each iteration increasing the loglikelihood
 \ell = \sum_n \log p(y_n) = \sum_n \log \sum_k \alpha_k f_k(y_n) = \sum_n c_n .
 ```
 
-`StochasticEM` inserts an S-step: instead of the soft weights `γₙ.` it draws one hard label
-`ẑₙ ∼ Categorical(γₙ.)` per observation, and refits component `k` on the observations that drew it — an
+`StochasticEM` inserts an S-step: instead of the soft weights $\gamma_n$ it draws one hard label
+$\hat{z}_n \sim \mathrm{Categorical}(\gamma_n)$ per observation, and refits component `k` on the observations that drew it — an
 *unweighted* `fit_mle` on a subsample.
 
 ### The same thing in code
@@ -119,15 +119,18 @@ end
 ```
 
 !!! warning "`γ` aliases `LL`"
-    The `N × K` matrix is allocated once and holds log-likelihoods, then posteriors: `LL` is dead the
-    moment a row is normalised. Nothing after the E-step may read it expecting log-likelihoods, which is
-    why the low-level functions take `LL` and `γ` as separate arguments — pass a distinct `γ` if you need
-    both at once.
+    One `N × K` matrix is allocated per fit. It first holds the log-likelihoods `log αₖ + log fₖ(yₙ)`,
+    and the normalisation then overwrites every entry with the corresponding posterior `γₙₖ`. So once
+    the E-step has run the log-likelihoods are gone, and anything added after it must not read that
+    matrix expecting to find them. The low-level functions still take `LL` and `γ` as two separate
+    arguments, so pass two different matrices if you need the log-likelihoods and the posteriors at
+    the same time.
 
 ### Extension points
 
-- A faster per-component likelihood: add a [`ExpectationMaximization.loglikelihoods!`](@ref) method. The
-  only contract is the value of `LL[n, k]` above.
+- A faster per-component likelihood: add a [`ExpectationMaximization.loglikelihoods!`](@ref) method. All
+  it has to do is fill `LL[n, k]` with `log αₖ + log fₖ(yₙ)`, as the E-step above does; how it computes
+  that value is up to you.
 - A different parameter update: add a [`ExpectationMaximization.M_step!`](@ref) method for your method type
   (both the weighted and the unweighted signature).
 - A different algorithm: `struct MyEM <: AbstractEM end` plus a `fit_mle!(α, dists, y, w, ::MyEM; kwargs...)`
@@ -161,8 +164,7 @@ ExpectationMaximization.M_step!
 
 !!! warning "Not public API"
     This helper is an implementation detail: it starts with an underscore, it is not exported, and its
-    signature can change in any patch release. It is documented here only because its in-place contract
-    matters when extending the E-step.
+    signature can change in any patch release.
 
 ```@docs
 ExpectationMaximization._softmax_rows!
