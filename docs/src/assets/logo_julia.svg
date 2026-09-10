@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="32.846565mm"
+   height="29.655895mm"
+   viewBox="0 0 32.846565 29.655895"
+   version="1.1"
+   id="svg17959"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   sodipodi:docname="logo_julia.svg"
+   inkscape:export-filename="logo.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview17961"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.0129245"
+     inkscape:cx="-209.29497"
+     inkscape:cy="-27.149111"
+     inkscape:window-width="2560"
+     inkscape:window-height="1369"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs17956">
+    <clipPath
+       id="clip-0-a7a371d1">
+      <path
+         clip-rule="nonzero"
+         d="M 16,21 H 584 V 434 H 16 Z m 0,0"
+         id="path817" />
+    </clipPath>
+    <clipPath
+       id="clip-1-a7a371d1">
+      <path
+         clip-rule="nonzero"
+         d="M 16,117 H 584 V 434 H 16 Z m 0,0"
+         id="path820" />
+    </clipPath>
+    <clipPath
+       id="clip-2-a7a371d1">
+      <path
+         clip-rule="nonzero"
+         d="M 16,16 H 584 V 434 H 16 Z m 0,0"
+         id="path823" />
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-130.98939,-81.506258)">
+    <ellipse
+       style="fill:#cb3c33;fill-opacity:1;stroke:none;stroke-width:1.02577;paint-order:stroke fill markers"
+       id="path473-2-1-2"
+       cx="138.30551"
+       cy="104.10732"
+       rx="7.3161197"
+       ry="7.0548306" />
+    <ellipse
+       style="fill:#9558b2;fill-opacity:1;stroke:none;stroke-width:1.02577;paint-order:stroke fill markers"
+       id="path473"
+       cx="156.51984"
+       cy="104.10732"
+       rx="7.3161197"
+       ry="7.0548306" />
+    <ellipse
+       style="fill:#389826;fill-opacity:1;stroke:none;stroke-width:1.02577;paint-order:stroke fill markers"
+       id="path473-2"
+       cx="147.37259"
+       cy="88.561089"
+       rx="7.3161197"
+       ry="7.0548306" />
+  </g>
+</svg>
