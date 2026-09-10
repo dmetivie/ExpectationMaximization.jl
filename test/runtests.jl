@@ -713,6 +713,7 @@ Distributions._logpdf(d::ScalarOnlyMv, x::AbstractVector) = -sum(abs2, x .- d.μ
     @test all(diff(hist["logtots"]) .>= -1e-8)
     @test mix_fit isa MixtureModel
     @test sum(probs(mix_fit)) ≈ 1
+end
 @testset "StochasticEM subsample is gathered before it is sliced by rows" begin
     # The S-step hands each component `view(y, :, cat[k])`, and `Base.reindex` copies that column
     # index once per row slice. Without `_gather_rows` a `Product` fit therefore costs
@@ -765,8 +766,3 @@ end
     mix_mle_s, hist_s = fit_mle(mix_guess, Xb; infos=true, robust=true, maxiter=20, method=StochasticEM(StableRNG(1)))
     @test hist_s["iterations"] <= 20
 end
-
-# @btime ExpectationMaximization.fit_mle(dist_ini, $(data_with_mix), atol=1e-3, maxiter=1000)
-# 1.159 s (33147640 allocations: 1.73 GiB) # before @views
-# 862.141 ms (27640 allocations: 254.45 MiB) # after some @views in Estep
-# @profview [ExpectationMaximization.fit_mle(dist_ini, (data_with_mix), atol=1e-3, maxiter=1000) for i in 1:10]
