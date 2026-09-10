@@ -21,13 +21,25 @@ hero:
       alt: ExpectationMaximization.jl
 
 features:
-  - icon: 🔄
+  - icon:
+      light: /logo_reduced.svg
+      dark: /logo_reduced.svg
+      alt: EM.jl
+      wrap: true
     title: Classic and Stochastic EM
     details: Choose between the classical or stochastic version of the EM, with convergence controls and optional robust likelihood handling. 
-  - icon: 🧩
+  - icon:
+      light: /logo_mix.svg
+      dark: /logo_mix.svg
+      alt: Mixtures
+      wrap: true
     title: Broad mixture support
     details: Fit univariate, multivariate, discrete, continuous, nested, and user-defined distributions.
-  - icon: ⚡
+  - icon:
+      light: /logo_julia.svg
+      dark: /logo_julia.svg
+      alt: Julia
+      wrap: true
     title: Generic Julia design
     details: Build on `Distributions.jl` and multiple dispatch for concise and readable code that remains flexible and fast.
 ---
@@ -67,6 +79,15 @@ Or, when possible, represent your “difficult” distribution as a mixture of s
 
 !!! note
     [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) *currently* does not allow `MixtureModel` to both have discrete and continuous components[^2].
+
+!!! warning "Your `fit_mle` must accept views"
+    To avoid copying the sample at every iteration, the M-step passes *views* rather than freshly allocated
+    arrays: `fit_mle(dist, view(y, cat))` (and `view(y, :, cat)`, `view(w, cat)`) for `StochasticEM`, and a
+    column view of the posterior matrix for `ClassicEM`. Annotate your methods with
+    `AbstractVector`/`AbstractMatrix`/`AbstractArray`, as `Distributions.jl` does — a method typed `::Vector`
+    or `::Matrix` will not be called for a `SubArray`.
+    The weights handed to `ClassicEM`'s `fit_mle(dist, y, γₖ)` are scratch memory owned by the algorithm:
+    read them, never keep a reference to them.
 
 [^2]: Rain is a good example of a mixture having both a discrete (`Delta` distribution in `0`) and continuous (`Exponential`, `Gamma`, ...) component.
 

@@ -6,7 +6,10 @@ struct ClassicEM <: AbstractEM end
 
 """
     fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, method::ClassicEM; display=:none, maxiter=1000, atol=1e-3, rtol=nothing, robust=false)
-Use the EM algorithm to update the Distribution `dists` and weights `α` composing a mixture distribution.
+    fit_mle!(α::AbstractVector, dists::AbstractVector{F} where {F<:Distribution}, y::AbstractVecOrMat, w::Union{Nothing,AbstractVector}, method::ClassicEM; display=:none, maxiter=1000, atol=1e-3, rtol=nothing, robust=false)
+Use the EM algorithm to update **in place** the Distribution `dists` and weights `α` composing a mixture distribution.
+When `y` is an `AbstractMatrix`, each column is one observation. `w`, when given and not `nothing`, is a weight vector of length `size_sample(y)`.
+Returns `history::Dict{String,Any}` with keys `"converged"::Bool`, `"iterations"::Int` and `"logtots"::Vector` (loglikelihood after each performed iteration, empty when `maxiter = 0`).
 - `robust = true` will prevent the (log)likelihood to overflow to `-∞` or `∞`.
 - `atol` criteria determining the convergence of the algorithm. If the Loglikelihood difference between two iteration `i` and `i+1` is smaller than `atol` i.e. `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<atol`, the algorithm stops.
 - `rtol` relative tolerance for convergence, `|ℓ⁽ⁱ⁺¹⁾ - ℓ⁽ⁱ⁾|<rtol*(|ℓ⁽ⁱ⁺¹⁾| + |ℓ⁽ⁱ⁾|)/2` (does not check if `rtol` is `nothing`)
@@ -41,20 +44,21 @@ function fit_mle!(
     N, K = size_sample(y), length(dists)
     # Allocate memory for in-place updates
     LL = zeros(N, K)
-    γ = similar(LL)
     c = zeros(N)
-    
+    s = zeros(N)
+    γ = LL   # γ aliases LL: the posteriors overwrite the log-likelihoods in place
+
     !isnothing(w) && @argcheck length(w) == N
-    
+
     converged = false
     iterations = 0
     logtots = eltype(c)[]
 
     # E-step
-    E_step!(LL, c, γ, dists, α, y; robust=robust)
+    E_step!(LL, c, γ, s, dists, α, y; robust=robust)
 
     # Loglikelihood
-    logtot = isnothing(w) ? sum(c) : sum(w[n] * c[n] for n in eachindex(c))
+    logtot = isnothing(w) ? sum(c) : _weighted_sum(w, c)
     (display == :iter) && println("Method = $(method)\nIteration 0: Loglikelihood = ", logtot)
 
     for it = 1:maxiter
@@ -62,10 +66,10 @@ function fit_mle!(
         isnothing(w) ? M_step!(α, dists, y, γ, method) : M_step!(α, dists, y, γ, w, method)
 
         # E-step
-        E_step!(LL, c, γ, dists, α, y; robust=robust)
+        E_step!(LL, c, γ, s, dists, α, y; robust=robust)
 
         # Loglikelihood
-        logtotp = isnothing(w) ? sum(c) : sum(w[n] * c[n] for n in eachindex(c))
+        logtotp = isnothing(w) ? sum(c) : _weighted_sum(w, c)
         (display == :iter) && println("Iteration $(it): loglikelihood = ", logtotp)
 
         push!(logtots, logtotp)
@@ -89,20 +93,37 @@ function fit_mle!(
         end
     end
 
-    return Dict("converged" => converged, "iterations" => iterations, "logtots" => logtots)
+    return Dict{String,Any}(
+        "converged" => converged, "iterations" => iterations, "logtots" => logtots
+    )
 end
 
 """
     M_step!(α, dists, y, γ, method::ClassicEM)
-For the `ClassicEM` the weigths `γ` computed at E-step for each observation in `y` are used to update `α` and `dists`.
+    M_step!(α, dists, y, γ, w, method::ClassicEM)
+For the `ClassicEM` the weights `γ` computed at the E-step for each observation in `y` are used to update
+`α` and `dists` in place: `α[k] = mean(γ[:, k])` and `dists[k] = fit_mle(dists[k], y, γ[:, k])`.
+
+The weighted variant folds the observation weights into the posteriors once (`γ .*= w`) and normalizes `α`
+by `sum(w)`, rather than materializing `w .* γ[:, k]` for each of the `K` components. It therefore
+**overwrites `γ`**, which is sound inside `fit_mle!` only because the next E-step rewrites `γ` entirely — so
+`γ` must not be read after the M-step.
 """
 function M_step!(α, dists, y::AbstractVecOrMat, γ, method::ClassicEM)
-    α[:] = mean(γ, dims=1)
-    dists[:] = [fit_mle(dists[k], y, γₖ) for (k, γₖ) in enumerate(eachcol(γ))]
+    N = size(γ, 1)
+    for (k, γₖ) in enumerate(eachcol(γ))
+        α[k] = sum(γₖ) / N
+        dists[k] = fit_mle(dists[k], y, γₖ)
+    end
 end
 
-#TODO: could probably replace γ, w by γ*w,
 function M_step!(α, dists, y::AbstractVecOrMat, γ, w, method::ClassicEM)
-    α[:] = mean(γ, weights(w), dims=1)
-    dists[:] = [fit_mle(dists[k], y, w .* γₖ) for (k, γₖ) in enumerate(eachcol(γ))]
+    # `γ` is scratch memory that the next E-step overwrites entirely, so the weights can be folded
+    # into it once instead of materializing `w .* γₖ` for each of the K components.
+    γ .*= w
+    sw = sum(w)
+    for (k, γₖ) in enumerate(eachcol(γ))
+        α[k] = sum(γₖ) / sw   # == mean(γ, weights(w), dims=1)[k]
+        dists[k] = fit_mle(dists[k], y, γₖ)
+    end
 end
