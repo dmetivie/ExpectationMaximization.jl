@@ -118,10 +118,8 @@ Fill `LL[n, k] = log(α[k]) + logpdf(dists[k], y[n])` and return `LL`. For the `
 **column** of `y` is one observation, so the entry is `log(α[k]) + logpdf(dists[k], y[:, n])`.
 
 This is the extension hook of the E-step: add a method for your component or sample type if it can score a
-whole sample at once, the only contract being the value of `LL[n, k]` above.
-
-For a matrix sample the per-component work is delegated to `Distributions.logpdf!`, so a component that
-implements `Distributions._logpdf!` is already scored in batch and needs no method here.
+whole sample at once. All such a method has to do is give `LL[n, k]` the value above; how it computes it
+is up to you.
 """
 function loglikelihoods!(LL::AbstractMatrix, dists, α, y::AbstractVector)
     # `logpdf.(dists[k], y)` is already a fused allocation-free broadcast, and the `Broadcasted`
@@ -229,8 +227,9 @@ Returns `γ`.
 - `c` a length-`N` vector filled with `c[n] = logsumexp(LL[n, :]) = log ℙ(y[n])`. The `fit_mle!` drivers
   sum (or weight-sum) it to get the loglikelihood, so no extra pass over `y` is needed.
 - `γ` the `N × K` posterior matrix, `γ[n, k] = ℙ(zₙ = k ∣ yₙ)`. It **may alias** `LL`, and every caller in
-  this package passes `γ === LL`, since `LL` is dead once the posteriors are formed. The contract is that
-  nothing afterwards reads `LL` expecting log-likelihoods; pass a distinct `γ` if you need both.
+  this package passes `γ === LL`: the log-likelihoods are not needed once the posteriors have been formed,
+  so the posteriors are written over them. Aliasing is therefore only safe as long as nothing afterwards
+  reads `LL` expecting log-likelihoods; pass a distinct `γ` if you need both matrices at once.
 - `s` a length-`N` scratch vector. Its contents are meaningless on entry and on exit.
 - `dists`, `α` the current components and mixing weights; `y` the sample (a vector, or a `D × N` matrix).
 - `robust = true` clamps `±Inf` log-likelihoods before normalizing, which is what prevents a degenerate,

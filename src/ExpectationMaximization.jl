@@ -3,7 +3,6 @@ module ExpectationMaximization
 using ArgCheck
 using Distributions
 using Distributions: ArrayOfUnivariateDistribution, VectorOfUnivariateDistribution # for product distributions
-using LogExpFunctions: logsumexp! # kept as the reference implementation of `_softmax_rows!`
 using StatsBase: weights
 using Random # to add @kwdef
 

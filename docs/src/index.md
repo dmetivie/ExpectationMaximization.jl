@@ -21,13 +21,25 @@ hero:
       alt: ExpectationMaximization.jl
 
 features:
-  - icon: 🔄
+  - icon:
+      light: /logo_reduced.svg
+      dark: /logo_reduced.svg
+      alt: EM.jl
+      wrap: true
     title: Classic and Stochastic EM
     details: Choose between the classical or stochastic version of the EM, with convergence controls and optional robust likelihood handling. 
-  - icon: 🧩
+  - icon:
+      light: /logo_mix.svg
+      dark: /logo_mix.svg
+      alt: Mixtures
+      wrap: true
     title: Broad mixture support
     details: Fit univariate, multivariate, discrete, continuous, nested, and user-defined distributions.
-  - icon: ⚡
+  - icon:
+      light: /logo_julia.svg
+      dark: /logo_julia.svg
+      alt: Julia
+      wrap: true
     title: Generic Julia design
     details: Build on `Distributions.jl` and multiple dispatch for concise and readable code that remains flexible and fast.
 ---
@@ -60,6 +72,14 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
 2. The `logpdf(dist, y)` is defined (it is used in the E-step)
 3. The `fit_mle(dist, y, weights)` returns the distribution with the updated parameters maximizing the likelihood. This is used in the M-step of the `ClassicalEM` algorithm. For the `StochasticEM` version, only `fit_mle(dist, y)` is needed. Type or instance version of `fit_mle` for your `dist` are accepted thanks to this [conversion line](https://github.com/dmetivie/ExpectationMaximization.jl/blob/60e833236a122cb5ef58150b1a445e2941ace5d1/src/that_should_be_in_Distributions.jl#L16).
 
+In general, step 2. is easy, while step 3. is only known explicitly for a few common distributions.
+In step 3., if the `fit_mle` is not explicitly known, you can always implement a numerical scheme, if it exists, for `fit_mle(dist, y)` see [`Gamma` distribution example](https://github.com/JuliaStats/Distributions.jl/blob/34a05d8a1671052624e7fa246b58484acc32cfe5/src/univariate/continuous/gamma.jl#L171) or use tools like [Optimizations.jl](https://docs.sciml.ai/Optimization/stable/).
+Or, when possible, represent your “difficult” distribution as a mixture of simple terms.
+(I had [this](https://stats.stackexchange.com/questions/63647/estimating-parameters-of-students-t-distribution) in mind, but it is not directly a mixture model.)
+
+!!! note
+    [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) *currently* does not allow `MixtureModel` to both have discrete and continuous components[^2].
+
 !!! warning "Your `fit_mle` must accept views"
     To avoid copying the sample at every iteration, the M-step passes *views* rather than freshly allocated
     arrays: `fit_mle(dist, view(y, cat))` (and `view(y, :, cat)`, `view(w, cat)`) for `StochasticEM`, and a
@@ -68,14 +88,6 @@ To work, the only requirements are that the components of the mixture `dist ∈ 
     or `::Matrix` will not be called for a `SubArray`.
     The weights handed to `ClassicEM`'s `fit_mle(dist, y, γₖ)` are scratch memory owned by the algorithm:
     read them, never keep a reference to them.
-
-In general, step 2. is easy, while step 3. is only known explicitly for a few common distributions.
-In step 3., if the `fit_mle` is not explicitly known, you can always implement a numerical scheme, if it exists, for `fit_mle(dist, y)` see [`Gamma` distribution example](https://github.com/JuliaStats/Distributions.jl/blob/34a05d8a1671052624e7fa246b58484acc32cfe5/src/univariate/continuous/gamma.jl#L171) or use tools like [Optimizations.jl](https://docs.sciml.ai/Optimization/stable/).
-Or, when possible, represent your “difficult” distribution as a mixture of simple terms.
-(I had [this](https://stats.stackexchange.com/questions/63647/estimating-parameters-of-students-t-distribution) in mind, but it is not directly a mixture model.)
-
-!!! note
-    [Distributions.jl](https://juliastats.org/Distributions.jl/stable/) *currently* does not allow `MixtureModel` to both have discrete and continuous components[^2].
 
 [^2]: Rain is a good example of a mixture having both a discrete (`Delta` distribution in `0`) and continuous (`Exponential`, `Gamma`, ...) component.
 
