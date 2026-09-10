@@ -44,7 +44,11 @@ jobs:
       # Installed explicitly rather than through setup-r-dependencies, which is built around a
       # package directory with a DESCRIPTION file (this repo has none).
       - name: Install R package mixtools
-        run: Rscript -e 'install.packages("mixtools")'
+        # An explicit mirror (setup-r sets one, but do not rely on it) and an explicit failure:
+        # install.packages() exits 0 even when the package fails to build.
+        run: |
+          Rscript -e 'install.packages("mixtools", repos = "https://cloud.r-project.org")'
+          Rscript -e 'if (!requireNamespace("mixtools", quietly = TRUE)) stop("mixtools failed to install")'
 
       # Make sure RCall.jl locates this system R (r-lib/actions puts R on PATH,
       # but exporting R_HOME/LD_LIBRARY_PATH explicitly is more robust).
