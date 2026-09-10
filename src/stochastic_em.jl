@@ -136,7 +136,10 @@ end
     M_step!(α, dists, y, cat, w, method::StochasticEM)
 For the `StochasticEM` the `cat` drawn at S-step for each observation in `y` is used to update `α` and
 `dists` in place. `cat[k]` indexes the observations assigned to component `k`, so the subsample is passed as
-a **view** rather than copied — component `fit_mle` methods must therefore accept `SubArray`s.
+a **view** rather than copied — component `fit_mle` methods must therefore accept `SubArray`s. A component
+`fit_mle` that slices such a view by rows should gather it once first, as
+`fit_mle(::Product, ::AbstractMatrix, args...)` does through `_gather_rows`: row-slicing a
+`view(y, :, cat[k])` re-copies its vector column index once per row.
 The weighted variant sets `α[k] = sum(w[cat[k]]) / sum(w)` and forwards `view(w, cat[k])` to each component fit.
 """
 function M_step!(α, dists, y::AbstractVector, cat, method::StochasticEM)

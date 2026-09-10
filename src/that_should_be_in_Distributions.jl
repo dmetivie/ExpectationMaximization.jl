@@ -34,6 +34,18 @@ fit_mle(d::T, x::AbstractArray{<:Integer}, w::AbstractArray{<:Real}) where {T<:C
 #TODO! but currently still have `product_distribution([d1, d2]) ≠ product_distribution(d1, d2)` (first is still `Product` while second is `Distributions.ProductDistribution`)
 #TODO! open issue in `Distributions.jl`
 
+# Both `fit_mle` methods below fit marginal `s` on row `s` of `x`, and `Base.reindex` copies a
+# vector-of-indices column index once per row slice. For a gather view -- `view(y, :, cat[k])`, what
+# the `StochasticEM` M-step passes -- row slicing therefore costs `size(x, 1) * size(x, 2) * 8` bytes
+# instead of `sizeof(x)`: 60 MiB rather than 1 MiB per M-step on the 784 x 10000 `Matrix{Bool}` MNIST
+# case. Gather the columns once instead. Note this dispatches on the *sample*, not on the component:
+# any component reaching these two methods is covered, nested mixtures of products included.
+_gather_rows(x::AbstractMatrix) = x
+_gather_rows(x::SubArray{<:Any,2,<:Any,<:Tuple{Any,AbstractVector{<:Integer}}}) = copy(x)
+# A range column index is not copied by `reindex` (`cols[Base.Slice]` is again a range), so a strided
+# view such as `view(y, :, a:b)` is passed through untouched, as is a `Matrix`, an `Adjoint`, a `BitMatrix`.
+_gather_rows(x::SubArray{<:Any,2,<:Any,<:Tuple{Any,AbstractRange{<:Integer}}}) = x
+
 """
     fit_mle(g::Product, x::AbstractMatrix, args...)
 
@@ -48,7 +60,8 @@ length `size(x, 2)`.
 function fit_mle(g::Product, x::AbstractMatrix, args...)
     d = size(x, 1)
     length(g) == d || throw(DimensionMismatch("The dimensions of g and x are inconsistent."))
-    return product_distribution([fit_mle(g.v[s], y, args...) for (s, y) in enumerate(eachrow(x))])
+    xr = _gather_rows(x)
+    return product_distribution([fit_mle(g.v[s], y, args...) for (s, y) in enumerate(eachrow(xr))])
 end
 
 params(g::Product) = params.(g.v)
@@ -75,7 +88,8 @@ function fit_mle(dists::VectorOfUnivariateDistribution, x::AbstractMatrix{<:Real
     length(dists) == size(x, 1) || throw(DimensionMismatch("The dimensions of dists and x are inconsistent."))
     # `view` rather than `x[s, :]`: the latter gathers a fresh N-vector for each of the D marginals,
     # on every iteration. Same as the `Product` method above, which already uses `eachrow`.
-    return product_distribution([fit_mle(d, promote_sample(eltype(d), view(x, s, :)), args...) for (s, d) in enumerate(dists.dists)]...)
+    xr = _gather_rows(x)
+    return product_distribution([fit_mle(d, promote_sample(eltype(d), view(xr, s, :)), args...) for (s, d) in enumerate(dists.dists)]...)
 end
 
 function fit_mle(dists::ArrayOfUnivariateDistribution, x::AbstractArray, args...)
