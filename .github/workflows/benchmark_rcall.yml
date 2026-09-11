@@ -40,14 +40,30 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'release'
+          # Posit Package Manager rather than CRAN. CRAN publishes no Linux binaries, so a plain
+          # install compiles mixtools and its ~60 dependencies from source: slow, and it fails
+          # outright on the ones needing system headers (`fs` wants libuv, `stringi` libicu). This
+          # points `repos` at P3M's binaries for the runner's Ubuntu release and sets the
+          # `HTTPUserAgent` that P3M requires before it will serve them.
+          use-public-rspm: true
+
+      # Belt and braces: P3M has binaries for the whole mixtools dependency tree, but if it ever
+      # misses one, R silently falls back to source, and these are the headers that build needs.
+      - name: Install system libraries needed by any source fallback
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libuv1-dev libcurl4-openssl-dev libssl-dev libxml2-dev libicu-dev
 
       # Installed explicitly rather than through setup-r-dependencies, which is built around a
       # package directory with a DESCRIPTION file (this repo has none).
       - name: Install R package mixtools
-        # An explicit mirror (setup-r sets one, but do not rely on it) and an explicit failure:
-        # install.packages() exits 0 even when the package fails to build.
+        # Use the repos setup-r configured above instead of naming a CRAN mirror here: an explicit
+        # `repos = "https://cloud.r-project.org"` overrides P3M and puts us back on source installs.
+        # CRAN is kept only as the fallback for an unset option. The last line is not redundant:
+        # `install.packages()` exits 0 even when the package failed to build.
         run: |
-          Rscript -e 'install.packages("mixtools", repos = "https://cloud.r-project.org")'
+          Rscript -e 'print(getOption("repos"))'
+          Rscript -e 'r <- getOption("repos"); if (!length(r) || any(r == "@CRAN@")) r <- c(CRAN = "https://cloud.r-project.org"); install.packages("mixtools", repos = r)'
           Rscript -e 'if (!requireNamespace("mixtools", quietly = TRUE)) stop("mixtools failed to install")'
 
       # Make sure RCall.jl locates this system R (r-lib/actions puts R on PATH,
