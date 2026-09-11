@@ -2,3 +2,9 @@
 # pixi environments
 .pixi
 *.egg-info
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+# pixi environments
+.pixi/*
+!.pixi/config.toml

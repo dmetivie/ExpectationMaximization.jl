@@ -1,0 +1,101 @@
+name: Benchmark (Julia + R + Python)
+
+# Manual (or weekly) only, never on push/PR: this job is a single-threaded, timing-sensitive
+# cross-language benchmark that takes hours, and PR-time benchmarking is already covered by the
+# much cheaper AirspeedVelocity job in benchmark_action.yml.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 1'   # Mondays, 04:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    name: Benchmark - ${{ matrix.version }} - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    # Measured on a local i7-13850HX, the full case list needs ~2h15-3h30, most of it in R's
+    # `mvnormalmixEM` at the largest N. Keep this above the real cost, and see the note at the
+    # bottom of this file for how to trim the case list instead.
+    timeout-minutes: 300
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Install R via r-lib/actions (avoids CondaPkg overhead for R)
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      # Installed explicitly rather than through setup-r-dependencies, which is built around a
+      # package directory with a DESCRIPTION file (this repo has none).
+      - name: Install R package mixtools
+        # An explicit mirror (setup-r sets one, but do not rely on it) and an explicit failure:
+        # install.packages() exits 0 even when the package fails to build.
+        run: |
+          Rscript -e 'install.packages("mixtools", repos = "https://cloud.r-project.org")'
+          Rscript -e 'if (!requireNamespace("mixtools", quietly = TRUE)) stop("mixtools failed to install")'
+
+      # Make sure RCall.jl locates this system R (r-lib/actions puts R on PATH,
+      # but exporting R_HOME/LD_LIBRARY_PATH explicitly is more robust).
+      - name: Export R_HOME for RCall.jl
+        run: |
+          echo "R_HOME=$(R RHOME)" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$(R RHOME)/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+
+      - uses: julia-actions/cache@v3
+
+      # Julia dependencies only. Note this does NOT resolve CondaPkg: the Python environment is
+      # installed lazily on the first `pyimport`, which is why it gets its own step below.
+      - name: Instantiate benchmark project
+        run: julia --project=benchmark -e 'import Pkg; Pkg.instantiate()'
+
+      - name: Resolve the Python environment (numpy, scikit-learn)
+        run: julia --project=benchmark -e 'using CondaPkg; CondaPkg.resolve(); CondaPkg.status()'
+
+      # Load and precompile everything, and check that R, mixtools and sklearn are actually
+      # reachable, so a broken environment costs seconds instead of dying hours into the run.
+      - name: Smoke check the backends
+        run: |
+          julia --threads=1 --project=benchmark -e '
+            using RCall, PythonCall, GaussianMixtures, ExpectationMaximization, BenchmarkTools, Suppressor
+            R"library(mixtools); packageVersion(\"mixtools\")" |> println
+            println(pyimport("sklearn").__version__)'
+
+      # Run benchmarks (single thread for fair cross-language comparison)
+      - name: Run benchmarks
+        run: julia --threads=1 --project=benchmark benchmark/benchmark_crosslang.jl
+
+      # The script rewrites the CSV after every case, so even a cancelled or failed run has data.
+      # `error` rather than `warn`: no files means the run produced nothing and should say so.
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ matrix.os }}-${{ matrix.version }}
+          path: benchmark/results/
+          if-no-files-found: error
+
+# Trimming the run: the expensive points are R's multivariate fits. On the recorded local run a
+# single `mvnormalmixEM` call took 630 s at K=2, D=2, N=100_000 and 234 s at K=2, D=10, N=50_000,
+# and `@belapsed` pays for that several times over. Dropping the largest N of cases 3, 4 and 5
+# brings the whole job to roughly 30-45 minutes.

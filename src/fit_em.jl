@@ -138,13 +138,18 @@ function loglikelihoods!(LL::AbstractMatrix, dists, α, y::AbstractMatrix)
     return LL
 end
 
-# `d` is an argument instead of `dists[k]` indexed inside the loop: that keeps its type concrete
-# in this body, so an abstract `eltype(dists)` costs one dynamic dispatch per component rather
-# than one per observation.
+# `d` is an argument instead of `dists[k]` indexed inside the call: that keeps its type concrete in
+# this body, so an abstract `eltype(dists)` costs one dynamic dispatch per component rather than one
+# per observation.
+#
+# `Distributions.logpdf!` is the batched public API. Its own fallback is one `logpdf` call per
+# observation, exactly the loop this function used to be, so a component that implements `_logpdf!`
+# gets to score the whole sample at once for free. Measured 2.8x for a `MixtureModel` component
+# (1.5x on a full nested fit, with a bit-identical loglikelihood) and a no-op for the product
+# distributions, which have no batched method.
 function _loglikelihood_col!(LLₖ, d, logα, y::AbstractMatrix)
-    @inbounds @views for n in axes(y, 2)
-        LLₖ[n] = logα + logpdf(d, y[:, n])
-    end
+    logpdf!(LLₖ, d, y)
+    LLₖ .+= logα
     return LLₖ
 end
 

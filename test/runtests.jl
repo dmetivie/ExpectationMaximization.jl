@@ -582,7 +582,9 @@ end
     # The univariate E-step uses `logpdf.(dists[k], y)`, which only works because Distributions
     # makes univariate distributions broadcast-scalar. So the `ArrayOfUnivariateDistribution`
     # layout (a vector of arrays) cannot be reached through `fit_mle`. Pinned here so that a
-    # future E-step rewrite starts supporting it deliberately rather than by accident.
+    # future E-step rewrite starts supporting it deliberately rather than by accident. Note that
+    # `Distributions.logpdf!` does accept this layout, which is one reason the univariate path keeps
+    # the broadcast instead of delegating like the matrix path does.
     y = [rand(StableRNG(9 + i), 2) for i = 1:50]
     mix = MixtureModel(
         [product_distribution([Normal(), Gamma(2, 1)]),
@@ -590,6 +592,128 @@ end
     @test_throws MethodError fit_mle(mix, y)
 end
 
+@testset "MvNormal E-step kernels match the generic fallback" begin
+    EM = ExpectationMaximization
+    PD = Distributions.PDMats
+    # the generic per-observation fallback, spelled out, as the reference
+    function generic_col!(LLₖ, d, logα, y::AbstractMatrix)
+        @inbounds @views for n in axes(y, 2)
+            LLₖ[n] = logα + logpdf(d, y[:, n])
+        end
+        return LLₖ
+    end
+    mk(kind, D) = begin
+        rng = StableRNG(D + (kind === :full ? 7 : 0))
+        μ = D == 1 ? [0.0] : collect(range(-1, 1, length=D))
+        kind === :full ? (A = randn(rng, D, D); MvNormal(μ, Matrix(A * A' / D + D * I))) :
+        kind === :diag ? MvNormal(μ, PD.PDiagMat(rand(rng, D) .+ 0.5)) :
+        kind === :iso ? MvNormal(μ, PD.ScalMat(D, 1.7)) :
+        kind === :zmfull ? (A = randn(rng, D, D); MvNormal(PD.PDMat(A * A' / D + D * I))) :
+        MvNormal(PD.ScalMat(D, 2.3))
+    end
+
+    for kind in (:full, :diag, :iso, :zmfull, :zmiso), D in (1, 2, 7, 33), N in (1, 255, 256, 257)
+        d = mk(kind, D)
+        y = rand(StableRNG(N + D), d, N)
+        a, b = zeros(N), zeros(N)
+        generic_col!(a, d, log(0.3), y)
+        EM._loglikelihood_col!(b, d, log(0.3), y)
+        @test a ≈ b rtol = 1e-12
+    end
+    # an empty sample must not error
+    @test EM._loglikelihood_col!(Float64[], mk(:full, 3), 0.0, zeros(3, 0)) == Float64[]
+
+    # component types without a kernel must keep the generic fallback
+    generic = which(EM._loglikelihood_col!,
+        Tuple{Vector{Float64},MvNormal{Float64,PD.PDMat{Float64,Matrix{Float64}},Vector{Float64}},
+            Float64,Matrix{Float64}})
+    for d in (product_distribution([Normal(), Gamma(2, 1)]),
+        MvNormalCanon([1.0, 2.0], [1.0, 1.0]),
+        MixtureModel([MvNormal([0.0, 0.0], I(2)), MvNormal([1.0, 1.0], I(2))]))
+        m = which(EM._loglikelihood_col!, Tuple{Vector{Float64},typeof(d),Float64,Matrix{Float64}})
+        @test m != generic                          # not the MvNormal kernel
+        @test occursin("fit_em.jl", String(m.file)) # the generic hook
+    end
+end
+
+@testset "Blocked weighted FullNormal fit matches Distributions" begin
+    PD = Distributions.PDMats
+    for D in (2, 7, 10, 33), N in (255, 256, 257, 2000)
+        rng = StableRNG(D + N)
+        A = randn(rng, D, D)
+        d = MvNormal(collect(range(-1, 1, length=D)), Matrix(A * A' / D + D * I))
+        y = rand(StableRNG(N + D), d, N)
+        w = rand(StableRNG(D), N) .+ 0.1
+        ref, new = fit_mle(FullNormal, y, w), fit_mle(d, y, w)
+        @test mean(new) == mean(ref)                # bit identical
+        @test cov(new) ≈ cov(ref) rtol = 1e-12      # blocked accumulation, so 1-2 ulp
+        @test typeof(new) == typeof(ref)
+    end
+    # DiagNormal and IsoNormal must keep their own fit, and their covariance type
+    y, w = rand(StableRNG(1), 2, 200), rand(StableRNG(2), 200) .+ 0.1
+    @test fit_mle(MvNormal([0.0, 0.0], PD.PDiagMat([2.0, 3.0])), y, w) isa Distributions.DiagNormal
+    @test fit_mle(MvNormal([0.0, 0.0], PD.ScalMat(2, 4.0)), y, w) isa Distributions.IsoNormal
+    # A non-BLAS eltype must not be claimed by the blocked method; it has to fall through to
+    # Distributions, which does not support BigFloat either, but that is its call and not ours.
+    A = randn(StableRNG(3), 2, 2)
+    db = MvNormal([0.0, 0.0], Matrix(A * A' + 2I))
+    @test occursin("specialized.jl",
+        String(which(fit_mle, Tuple{typeof(db),Matrix{Float64},Vector{Float64}}).file))
+    @test !occursin("specialized.jl",
+        String(which(fit_mle, Tuple{typeof(db),Matrix{BigFloat},Vector{BigFloat}}).file))
+end
+
+# A component implementing only the scalar `logpdf`, i.e. the minimum the genericity contract asks
+# for. `Distributions.logpdf!` must fall back to one call per observation for it.
+struct ScalarOnlyMv <: Distributions.ContinuousMultivariateDistribution
+    μ::Vector{Float64}
+end
+Base.length(d::ScalarOnlyMv) = length(d.μ)
+Distributions._logpdf(d::ScalarOnlyMv, x::AbstractVector) = -sum(abs2, x .- d.μ) / 2
+
+@testset "Generic matrix E-step delegates to Distributions.logpdf!" begin
+    EM = ExpectationMaximization
+    # The generic `_loglikelihood_col!` calls `Distributions.logpdf!`, whose own fallback is one
+    # `logpdf` per observation. A component with a batched `_logpdf!` (a nested `MixtureModel`,
+    # `MvNormalCanon`, ...) is therefore scored in a single call, and everything else keeps the
+    # per-observation behaviour. The values must be identical either way.
+    function reference!(LLₖ, d, logα, y)
+        @inbounds @views for n in axes(y, 2)
+            LLₖ[n] = logα + logpdf(d, y[:, n])
+        end
+        return LLₖ
+    end
+    for D in (1, 2, 6), N in (0, 1, 137)
+        rng = StableRNG(10D + N)
+        for d in (
+            MixtureModel([MvNormal(randn(rng, D), I(D)) for _ = 1:3], [0.25, 0.35, 0.4]),
+            MvNormalCanon(randn(rng, D), rand(rng, D) .+ 0.5),
+            product_distribution([Normal(randn(rng), rand(rng) + 0.5) for _ = 1:D]),
+            ScalarOnlyMv(randn(rng, D)),
+        )
+            y = randn(StableRNG(D + N), D, N)
+            a, b = zeros(N), zeros(N)
+            reference!(a, d, log(0.3), y)
+            EM._loglikelihood_col!(b, d, log(0.3), y)
+            @test a ≈ b rtol = 1e-12
+        end
+    end
+    # A weight of zero must still give `-Inf`, not `NaN`, now that `logα` is added in a second pass.
+    d = MvNormal(zeros(3), I(3))
+    @test all(==(-Inf), EM._loglikelihood_col!(zeros(4), d, -Inf, randn(StableRNG(5), 3, 4)))
+
+    # A mixture of *multivariate* mixtures is documented as supported but had no test. It is also
+    # the configuration this delegation speeds up (measured 1.5x end to end), so pin that it fits.
+    D, N = 4, 1000
+    rng = StableRNG(42)
+    inner(c) = MixtureModel([MvNormal(c .+ randn(rng, D) ./ 4, I(D)) for _ = 1:2], [0.4, 0.6])
+    mix_true = MixtureModel([inner(-2.5), inner(2.5)], [0.45, 0.55])
+    y = rand(StableRNG(7), mix_true, N)
+    mix_fit, hist = fit_mle(mix_true, y; maxiter=5, atol=0.0, infos=true)
+    @test all(diff(hist["logtots"]) .>= -1e-8)
+    @test mix_fit isa MixtureModel
+    @test sum(probs(mix_fit)) ≈ 1
+end
 @testset "StochasticEM subsample is gathered before it is sliced by rows" begin
     # The S-step hands each component `view(y, :, cat[k])`, and `Base.reindex` copies that column
     # index once per row slice. Without `_gather_rows` a `Product` fit therefore costs
@@ -642,8 +766,3 @@ end
     mix_mle_s, hist_s = fit_mle(mix_guess, Xb; infos=true, robust=true, maxiter=20, method=StochasticEM(StableRNG(1)))
     @test hist_s["iterations"] <= 20
 end
-
-# @btime ExpectationMaximization.fit_mle(dist_ini, $(data_with_mix), atol=1e-3, maxiter=1000)
-# 1.159 s (33147640 allocations: 1.73 GiB) # before @views
-# 862.141 ms (27640 allocations: 254.45 MiB) # after some @views in Estep
-# @profview [ExpectationMaximization.fit_mle(dist_ini, (data_with_mix), atol=1e-3, maxiter=1000) for i in 1:10]

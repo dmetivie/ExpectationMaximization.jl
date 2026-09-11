@@ -128,7 +128,9 @@ end
 
 ### Extension points
 
-- A faster per-component likelihood: add a [`ExpectationMaximization.loglikelihoods!`](@ref) method. All
+- A faster per-component likelihood: for a matrix sample, implementing `Distributions._logpdf!` for your
+  component is already enough, since that is what the E-step calls. Otherwise add a
+  [`ExpectationMaximization.loglikelihoods!`](@ref) method. All
   it has to do is fill `LL[n, k]` with `log αₖ + log fₖ(yₙ)`, as the E-step above does; how it computes
   that value is up to you.
 - A different parameter update: add a [`ExpectationMaximization.M_step!`](@ref) method for your method type
@@ -163,12 +165,69 @@ ExpectationMaximization.M_step!
 ### Internals
 
 !!! warning "Not public API"
-    This helper is an implementation detail: it starts with an underscore, it is not exported, and its
-    signature can change in any patch release.
+    These helpers are implementation details: they start with an underscore, they are not exported, and
+    their signatures can change in any patch release.
 
 ```@docs
+ExpectationMaximization._loglikelihood_col!
 ExpectationMaximization._softmax_rows!
 ```
+
+## Specialized components
+
+For a matrix sample the generic E-step hands each component to `Distributions.logpdf!`, the batched entry
+point of `Distributions.jl`. Its own fallback is one `logpdf` call per observation — what this package used
+to do by hand — but a component that implements `Distributions._logpdf!` scores the whole sample in a
+single call, at no cost in the generic code. A nested `MixtureModel` component gets its speed from exactly
+that: 2.8× on the E-step of a mixture of multivariate mixtures and 1.5× on the whole fit, with a
+bit-identical loglikelihood. Product distributions have no batched method, so for them the delegation is a
+measured no-op.
+
+`MvNormal` is the family where that is not enough. `logpdf!` reaches `Distributions.sqmahal!`, which
+materialises a `D × N` centred copy of the sample and then still solves one triangular system per
+observation; for an isotropic covariance it is even *slower* than the per-observation path (measured 1.8×
+at `D = 50`, which is why the delegation and these kernels belong together). `src/specialized.jl` adds
+fast paths for `MvNormal` as extra [`ExpectationMaximization._loglikelihood_col!`](@ref) methods, selected
+by dispatch on the component type, so nothing in the generic path changes and any component they do not
+match keeps the delegated `logpdf!` path; deleting the file would only make the package slower.
+
+Two kernels cover the three covariance shapes:
+
+- **isotropic or diagonal** `Σ`: the Mahalanobis form is a plain weighted sum of squares, evaluated in one
+  pass with no temporary at all.
+- **full** `Σ`: the sample is processed in blocks of `MVNORMAL_BLOCKSIZE` observations, each block centred
+  into a cache-resident `D × MVNORMAL_BLOCKSIZE` buffer and whitened with one in-place `PDMats.whiten!` —
+  a BLAS-3 `trsm` — instead of the one BLAS-2 `trsv` per observation that `logpdf` performs.
+
+Measured speedup over the delegated `logpdf!` path, for one component, at `N = 10⁵`, single-threaded:
+
+| `D` | 2 | 10 | 50 | 100 |
+|:--|--:|--:|--:|--:|
+| `FullNormal` | 11.4× | 5.6× | 4.2× | 3.5× |
+| `DiagNormal` | 3.9× | 5.2× | 7.7× | 7.4× |
+| `IsoNormal` | 4.4× | 4.0× | 5.6× | 5.4× |
+
+Over that same range the allocation of one component's E-step goes from 1.5 MB (`D = 2`) to 76.3 MB
+(`D = 100`) down to 206 KB for a full covariance and under 2 KB for the other two — and, unlike the
+generic path, it does not grow with `N`. The results agree with the generic path to a few units in the
+last place, and the `ZeroMean*` variants are covered for free because the
+`IsoNormal`/`DiagNormal`/`FullNormal` aliases only constrain the covariance and element types.
+
+The same file also adds a `Distributions.fit_mle(::FullNormal, y, w)` method for the M-step. It computes
+exactly the same weighted maximum-likelihood estimate as `Distributions.jl` — the mean is bit-identical and
+the covariance agrees to about `1e-14`, the difference being the order of accumulation — but builds the
+scatter matrix blockwise with `syrk!` into a reused buffer instead of allocating a fresh `D × N` array on
+every call. `DiagNormal` and `IsoNormal` deliberately keep their own fits, which are already cheap and, more
+importantly, preserve the covariance type of the component.
+
+!!! note "Adding your own"
+    If your component can score a whole sample at once, implementing `Distributions._logpdf!(out, d, y)`
+    is enough and nothing here needs to change. Write a `_loglikelihood_col!` method (and, if the
+    maximum-likelihood estimate can reuse a buffer, a `fit_mle` method) only when you also want what
+    `logpdf!` cannot express: folding `log α` into the same pass, or reusing a scratch buffer across
+    calls, as the kernels above do. The contract is then only the value of `LL[n, k]` given in
+    [How the implementation is organised](@ref); everything else, including the `γ`-aliases-`LL`
+    convention, is handled by the generic E-step.
 
 ## Index
 
