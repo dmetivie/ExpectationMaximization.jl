@@ -36,9 +36,12 @@ const REFERENCE = "ExpectationMaximization.jl"
 
 # ── Reading the results ───────────────────────────────────────────────────────
 #
-# The column order is fixed by `benchmark_crosslang.jl`: case,backend,K,D,N,time_s.
-# No quoting and no embedded commas, so `split` is enough and the benchmark
-# environment needs no CSV.jl.
+# The column order is fixed by `benchmark_crosslang.jl`:
+# case,backend,K,D,N,time_s,iters_asked,iters_run. No quoting and no embedded
+# commas, so `split` is enough and the benchmark environment needs no CSV.jl.
+#
+# The two iteration columns were added later, so a six-column file written by an earlier run is
+# still read — with the counts left at 0, meaning "not recorded".
 
 struct Timing
     case::String
@@ -47,6 +50,8 @@ struct Timing
     D::Int
     N::Int
     time_s::Float64
+    iters_asked::Int
+    iters_run::Int
 end
 
 function read_timings(path)
@@ -55,13 +60,15 @@ function read_timings(path)
     for (i, line) in enumerate(eachline(path))
         (i == 1 || isempty(strip(line))) && continue    # header, trailing newline
         f = split(strip(line), ',')
-        length(f) == 6 || error("$path:$i: expected 6 fields, got $(length(f))")
+        length(f) in (6, 8) || error("$path:$i: expected 6 or 8 fields, got $(length(f))")
+        asked, run = length(f) == 8 ? (parse(Int, f[7]), parse(Int, f[8])) : (0, 0)
         push!(
             rows,
             Timing(
                 f[1], f[2],
                 parse(Int, f[3]), parse(Int, f[4]), parse(Int, f[5]),
                 parse(Float64, f[6]),
+                asked, run,
             ),
         )
     end
@@ -153,8 +160,14 @@ function plot_ratio(rows, cases, backends, lookup)
             isempty(N) && continue
             plot!(p, N, ratio; label="$backend / EM.jl", c=c + 1, marker=:circle, markersize=3)
         end
-        xlims!(p, 100, 2_000_000)
-        ylims!(p, 0.1, 1e5)
+        # Limits from the data, not fixed: a hard `ylims!(p, 0.1, 1e5)` silently deletes any point
+        # outside it, and the points most worth seeing are exactly the extremes — a backend that beats
+        # the reference by more than 10x would vanish without a trace.
+        rs = [r for b in others for r in last(ratio_series(rows, lookup, case, b))]
+        if !isempty(rs)
+            lo, hi = extrema(rs)
+            ylims!(p, min(lo, 1.0) / 2, max(hi, 1.0) * 2)   # keep the ratio-1 line in frame
+        end
         p
     end
     nrow, ncol = grid_size(length(panels))
@@ -192,6 +205,19 @@ REFERENCE in backends ||
 println("Read $(length(rows)) rows from $csv_path")
 println("  cases    : ", join(cases, ", "))
 println("  backends : ", join(backends, ", "))
+
+# A point where a backend stopped before the requested number of iterations is plotted like any
+# other, but it is not measuring the same amount of work, so say so rather than let the curve
+# quietly claim a speed-up that is really a shorter run.
+let short = [r for r in rows if r.iters_run != r.iters_asked && r.iters_asked > 0]
+    if !isempty(short)
+        println("  ⚠ $(length(short)) point(s) where a backend stopped early; their times cover " *
+                "fewer EM steps:")
+        for r in short
+            println("      $(r.case) N=$(r.N) $(r.backend): $(r.iters_run)/$(r.iters_asked) iterations")
+        end
+    end
+end
 
 default(fontfamily="Computer Modern", linewidth=2, markerstrokewidth=0,
     legendfontsize=8, titlefontsize=11, guidefontsize=10, tickfontsize=8,

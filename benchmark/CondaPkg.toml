@@ -1,6 +1,11 @@
-
+# Version floors, not just package names: an unconstrained solve can hand a reproducer a much older
+# scikit-learn, and `GaussianMixture` only skips its KMeans initialisation when all three `*_init`
+# arguments are given — on a version without that short-circuit every timed fit would silently run a
+# full KMeans over the data first. `benchmark_crosslang.jl` also checks for it at startup.
 [deps.scikit-learn]
 channel = "conda-forge"
+version = ">=1.3"
 
 [deps.numpy]
 channel = "conda-forge"
+version = ">=1.24"
