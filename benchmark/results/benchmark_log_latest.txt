@@ -1,0 +1,116 @@
+Cross-language EM benchmark — 2026-09-11 15:04
+Julia threads 1, BLAS threads 1; full version details in results/system_info_2026-09-11.txt
+======================================================================
+Case K2_D1 — K=2, D=1, Univariate Normal mixture
+======================================================================
+N = 500
+  fixed-point check: EM.jl 26 iterations, mixtools 23
+  EM.jl=0.000175s  GMM.jl=0.000159s  R=0.00123s  sklearn=0.00273s
+N = 1000
+  EM.jl=0.00035s  GMM.jl=0.000261s  R=0.00188s  sklearn=0.00375s
+N = 5000
+  EM.jl=0.00178s  GMM.jl=0.00117s  R=0.00726s  sklearn=0.0104s
+N = 10000
+  EM.jl=0.0036s  GMM.jl=0.00229s  R=0.0139s  sklearn=0.0188s
+N = 50000
+  EM.jl=0.0185s  GMM.jl=0.0117s  R=0.0689s  sklearn=0.0854s
+N = 100000
+  EM.jl=0.0372s  GMM.jl=0.0236s  R=0.142s  sklearn=0.17s
+N = 500000
+  EM.jl=0.188s  GMM.jl=0.12s  R=0.916s  sklearn=0.862s
+  [K2_D1] 312.5 s, 99.044 GiB allocated
+
+======================================================================
+Case K5_D1 — K=5, D=1, Univariate Normal mixture
+======================================================================
+N = 500
+  fixed-point check: EM.jl 1033 iterations, mixtools 740
+  EM.jl=0.000929s  GMM.jl=0.000597s  R=0.0048s  sklearn=0.00712s
+N = 1000
+  EM.jl=0.00189s  GMM.jl=0.00109s  R=0.00806s  sklearn=0.01s
+N = 5000
+  EM.jl=0.00975s  GMM.jl=0.00503s  R=0.0352s  sklearn=0.0358s
+N = 10000
+  EM.jl=0.0196s  GMM.jl=0.0102s  R=0.0668s  sklearn=0.0668s
+N = 50000
+  EM.jl=0.101s  GMM.jl=0.052s  R=0.345s  sklearn=0.313s
+N = 100000
+  EM.jl=0.203s  GMM.jl=0.105s  R=0.856s  sklearn=0.704s
+  [K5_D1] 269.3 s, 77.876 GiB allocated
+
+======================================================================
+Case K2_D2 — K=2, D=2, Multivariate Normal mixture
+======================================================================
+N = 500
+  fixed-point check: EM.jl 7 iterations, mixtools 7
+  EM.jl=0.000526s  GMM.jl=0.0018s  R=2.57s  sklearn=0.0101s
+N = 1000
+  EM.jl=0.00103s  GMM.jl=0.00334s  R=5.25s  sklearn=0.0129s
+N = 5000
+  EM.jl=0.00505s  GMM.jl=0.0162s  R=25.4s  sklearn=0.035s
+N = 10000
+  EM.jl=0.0101s  GMM.jl=0.0322s  R=50.7s  sklearn=0.0622s
+N = 25000
+  ↓ mixtools.R took 142.0s, over the 100.0s limit; skipping it for the larger N of this case
+  EM.jl=0.0259s  GMM.jl=0.0816s  R=142.0s  sklearn=0.146s
+  [K2_D2] 1070.4 s, 109.467 GiB allocated
+
+======================================================================
+Case K2_D10 — K=2, D=10, Multivariate Normal mixture
+======================================================================
+N = 500
+  fixed-point check: EM.jl 4 iterations, mixtools 4
+  EM.jl=0.00153s  GMM.jl=0.003s  R=3.38s  sklearn=0.0114s
+N = 1000
+  EM.jl=0.00297s  GMM.jl=0.00563s  R=6.64s  sklearn=0.0151s
+N = 5000
+  EM.jl=0.0143s  GMM.jl=0.0249s  R=31.5s  sklearn=0.0446s
+N = 10000
+  EM.jl=0.029s  GMM.jl=0.0502s  R=63.3s  sklearn=0.0803s
+N = 20000
+  ↓ mixtools.R took 125.0s, over the 100.0s limit; skipping it for the larger N of this case
+  EM.jl=0.0581s  GMM.jl=0.112s  R=125.0s  sklearn=0.151s
+  [K2_D10] 1096.8 s, 133.136 GiB allocated
+
+✓ 92 timings saved to results/benchmark_timings_2026-09-11.csv and results/benchmark_timings_latest.csv
+✓ this transcript is saved to results/benchmark_log_2026-09-11.txt and results/benchmark_log_latest.txt
+
+======================================================================
+Summary — EM.jl speed-up ratio  (backend_time / EM.jl_time)
+======================================================================
+
+  [K2_D1]
+    N=500:  GaussianMixtures.jl          0.9×   mixtools.R                   7.0×   sklearn.py                   15.6×
+    N=1000:  GaussianMixtures.jl          0.7×   mixtools.R                   5.4×   sklearn.py                   10.7×
+    N=5000:  GaussianMixtures.jl          0.7×   mixtools.R                   4.1×   sklearn.py                   5.8×
+    N=10000:  GaussianMixtures.jl          0.6×   mixtools.R                   3.9×   sklearn.py                   5.2×
+    N=50000:  GaussianMixtures.jl          0.6×   mixtools.R                   3.7×   sklearn.py                   4.6×
+    N=100000:  GaussianMixtures.jl          0.6×   mixtools.R                   3.8×   sklearn.py                   4.6×
+    N=500000:  GaussianMixtures.jl          0.6×   mixtools.R                   4.9×   sklearn.py                   4.6×
+
+  [K5_D1]
+    N=500:  GaussianMixtures.jl          0.6×   mixtools.R                   5.2×   sklearn.py                   7.7×
+    N=1000:  GaussianMixtures.jl          0.6×   mixtools.R                   4.3×   sklearn.py                   5.3×
+    N=5000:  GaussianMixtures.jl          0.5×   mixtools.R                   3.6×   sklearn.py                   3.7×
+    N=10000:  GaussianMixtures.jl          0.5×   mixtools.R                   3.4×   sklearn.py                   3.4×
+    N=50000:  GaussianMixtures.jl          0.5×   mixtools.R                   3.4×   sklearn.py                   3.1×
+    N=100000:  GaussianMixtures.jl          0.5×   mixtools.R                   4.2×   sklearn.py                   3.5×
+
+  [K2_D2]
+    N=500:  GaussianMixtures.jl          3.4×   mixtools.R                   4885.6×   sklearn.py                   19.2×
+    N=1000:  GaussianMixtures.jl          3.2×   mixtools.R                   5092.3×   sklearn.py                   12.5×
+    N=5000:  GaussianMixtures.jl          3.2×   mixtools.R                   5036.0×   sklearn.py                   6.9×
+    N=10000:  GaussianMixtures.jl          3.2×   mixtools.R                   5017.2×   sklearn.py                   6.2×
+    N=25000:  GaussianMixtures.jl          3.2×   mixtools.R                   5502.7×   sklearn.py                   5.6×
+
+  [K2_D10]
+    N=500:  GaussianMixtures.jl          2.0×   mixtools.R                   2218.4×   sklearn.py                   7.5×
+    N=1000:  GaussianMixtures.jl          1.9×   mixtools.R                   2235.4×   sklearn.py                   5.1×
+    N=5000:  GaussianMixtures.jl          1.7×   mixtools.R                   2201.3×   sklearn.py                   3.1×
+    N=10000:  GaussianMixtures.jl          1.7×   mixtools.R                   2180.8×   sklearn.py                   2.8×
+    N=20000:  GaussianMixtures.jl          1.9×   mixtools.R                   2153.0×   sklearn.py                   2.6×
+✓ System info saved to results/system_info_2026-09-11.txt
+
+✓ Every backend ran exactly the requested number of EM iterations
+
+✓ All cross-checks passed

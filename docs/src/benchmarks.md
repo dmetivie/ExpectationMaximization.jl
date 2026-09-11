@@ -29,6 +29,8 @@ No heavy programming tricks are used. The performance comes from standard Julia 
 
 ## Results
 
+The published run is the one produced by the [`Benchmark (Julia + R + Python)`](https://github.com/dmetivie/ExpectationMaximization.jl/blob/master/.github/workflows/benchmark_rcall.yml) GitHub Actions workflow, on an `ubuntu-latest` runner (AMD EPYC 7763) with a single Julia thread and a single BLAS thread. A CI runner is slower and noisier than a workstation, but it is the same machine for all four backends and anybody can re-run it, which matters more here than absolute speed.
+
 All benchmark cases are shown in a single figure: one panel per `(K, D)`, with the ratio of each backend's fit time to `ExpectationMaximization.jl`'s against the sample size `N`. Above the dashed line means slower than `ExpectationMaximization.jl`; the vertical axis is logarithmic because `mixtools` is several orders of magnitude slower on the multivariate cases.
 
 Only the ratio is shown. Absolute times are not comparable across cases — each case fixes its own number of EM iterations — whereas a ratio between two backends at the same `N` of the same case always compares equal amounts of work.
@@ -43,12 +45,12 @@ Three caveats that transcript will show you.
 
 - `mixtools` performs a *multicycle ECM* step — two E-steps per iteration, the second one after the means have been updated — so it does more work per iteration than the other three, and its intermediate iterates differ from theirs. It is therefore compared with them at its fixed point, with everything run to convergence. Part of its distance from the other backends is this extra work, not R being slow.
 - `GaussianMixtures.jl` ends its loop on an M-step, while the other three evaluate the likelihood of the parameters they finish on and so pay one further E-step. At the same iteration count it therefore does about 6% less work at `iters = 8` and 2.5% at `iters = 20`. Asking it for one more iteration would buy an extra M-step too, so the difference is reported rather than papered over.
-- A backend whose fit exceeds 100 s is dropped from the larger `N` of that case, so its curve stops early rather than costing hours.
+- A backend whose fit exceeds 100 s is dropped from the larger `N` of that case, so its curve stops early rather than costing hours. On the published run this happened to `mixtools` in both multivariate cases.
 
 !!! tip "Results"
-    For univariate Gaussian mixtures, `ExpectationMaximization.jl` is about 7-10× faster than `Sklearn` (Python) and `mixtools` (R).
-    For multivariate Gaussian mixtures that gap is  widen especially for `mixtools`, whose `mvnormalmixEM` is orders of magnitude slower. 
-    It achieves a speed comparable to the Gaussian-specialized `GaussianMixtures.jl`. Crucially, unlike all other packages, `ExpectationMaximization.jl` handles arbitrary mixture distributions out of the box.
+    On **univariate** Gaussian mixtures, `ExpectationMaximization.jl` is 3-5× faster than `mixtools` (R) and `Sklearn` (Python) — up to 7× and 16× respectively at `N = 500`, where those two still pay a fixed per-call overhead. `GaussianMixtures.jl` is the one backend ahead of it here, by 1.6-2× over most of the range; the next section says why.
+    On **multivariate** Gaussian mixtures it leads everything tested: 1.7-3.4× faster than `GaussianMixtures.jl`, 2.6-19× faster than `Sklearn`, and three orders of magnitude faster than `mixtools`, whose `mvnormalmixEM` is the outlier of the whole benchmark.
+    And unlike every other package here, it does all this while accepting an arbitrary `Distributions.jl` mixture.
 
 ### Reproducing these figures
 

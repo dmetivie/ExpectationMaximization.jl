@@ -40,11 +40,11 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'release'
-          # Posit Package Manager rather than CRAN. CRAN publishes no Linux binaries, so a plain
-          # install compiles mixtools and its ~60 dependencies from source: slow, and it fails
-          # outright on the ones needing system headers (`fs` wants libuv, `stringi` libicu). This
-          # points `repos` at P3M's binaries for the runner's Ubuntu release and sets the
-          # `HTTPUserAgent` that P3M requires before it will serve them.
+          # P3M rather than CRAN, because CRAN publishes no Linux binaries: installing from a CRAN
+          # mirror compiles mixtools and its ~60 dependencies from source, which fails outright on
+          # the ones needing system headers (`fs` wants libuv, `stringi` libicu). This is already
+          # the action's default, and is pinned here only so that the install step below is
+          # obviously reading a P3M `repos` and not a CRAN one.
           use-public-rspm: true
 
       # Belt and braces: P3M has binaries for the whole mixtools dependency tree, but if it ever
@@ -101,14 +101,25 @@ jobs:
       - name: Run benchmarks
         run: julia --threads=1 --project=benchmark benchmark/benchmark_crosslang.jl
 
-      # The script rewrites the CSV after every case, so even a cancelled or failed run has data.
+      # Drawn here as well as locally, so the artifact carries the very figures the documentation
+      # displays and they only have to be committed. `always()`: the benchmark rewrites its CSV after
+      # every case, so even a timed-out run has something to plot.
+      - name: Draw the figures
+        if: always()
+        run: julia --project=benchmark benchmark/plot_crosslang.jl
+
+      # Several paths, so the artifact is rooted at `benchmark/` and unzips straight over a checkout:
+      # `gh run download -n <name> -D .` puts results and figures back exactly where they belong.
       # `error` rather than `warn`: no files means the run produced nothing and should say so.
       - name: Upload benchmark results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results-${{ matrix.os }}-${{ matrix.version }}
-          path: benchmark/results/
+          path: |
+            benchmark/results/
+            benchmark/timing_crosslang*.svg
+            benchmark/timing_crosslang*.pdf
           if-no-files-found: error
 
 # Trimming the run: the expensive points are R's multivariate fits. On the recorded local run a
