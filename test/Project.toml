@@ -13,6 +13,9 @@ ExpectationMaximization = {path = ".."}
 
 [compat]
 Distributions = "0.25"
+LinearAlgebra = "< 0.0.1, 1"
 LogExpFunctions = "0.3, 1.0"
 MLDatasets = "0.7"
+Random = "< 0.0.1, 1"
 StableRNGs = "1.0"
+Test = "< 0.0.1, 1"

@@ -20,8 +20,10 @@ ExpectationMaximization = {path = ".."}
 [compat]
 BenchmarkTools = "1.8"
 CondaPkg = "0.2"
+Dates = "< 0.0.1, 1"
 Distributions = "0.25"
 GaussianMixtures = "0.3"
+InteractiveUtils = "< 0.0.1, 1"
 LaTeXStrings = "1.4"
 MLDatasets = "0.7"
 PythonCall = "0.9"
