@@ -94,7 +94,7 @@ jobs:
         run: |
           julia --project=benchmark -e '
             import Pkg
-            Pkg.instantiate(; allow_autoprecompile = false)
+            Pkg.instantiate(; allow_autoprecomp = false)
             Pkg.build(["Conda", "RCall"]; verbose = true)
             Pkg.precompile()'
 
