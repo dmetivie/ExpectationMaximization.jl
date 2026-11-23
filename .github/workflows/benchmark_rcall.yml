@@ -82,8 +82,21 @@ jobs:
 
       # Julia dependencies only. Note this does NOT resolve CondaPkg: the Python environment is
       # installed lazily on the first `pyimport`, which is why it gets its own step below.
+      #
+      # Conda and RCall are rebuilt on every run, before anything is precompiled. The cache above
+      # restores ~/.julia/packages, so `instantiate` considers them built and skips their build
+      # scripts, yet their build output is stale or missing: Conda's deps.jl points at
+      # ~/.julia/conda, which is not cached ("Path to conda environment is not valid"), and RCall's
+      # deps.jl hard-codes the Rhome/libR of whichever R the cache was populated with, which is not
+      # necessarily the R that setup-r just installed ("Could not find library .../libR.so").
+      # R_HOME is exported by the step above, so RCall's build picks up this runner's R.
       - name: Instantiate benchmark project
-        run: julia --project=benchmark -e 'import Pkg; Pkg.instantiate()'
+        run: |
+          julia --project=benchmark -e '
+            import Pkg
+            Pkg.instantiate(; allow_autoprecompile = false)
+            Pkg.build(["Conda", "RCall"]; verbose = true)
+            Pkg.precompile()'
 
       - name: Resolve the Python environment (numpy, scikit-learn)
         run: julia --project=benchmark -e 'using CondaPkg; CondaPkg.resolve(); CondaPkg.status()'
